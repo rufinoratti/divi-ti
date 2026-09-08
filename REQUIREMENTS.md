@@ -13,7 +13,7 @@ Construir una demostración móvil de Divi que permita a un grupo registrar gast
 - Recalcular el balance neto de cada integrante luego de cada movimiento.
 - Mostrar quién debe pagar a quién para saldar el grupo.
 - Listar los movimientos recientes y permitir filtrarlos por tipo.
-- Persistir los datos en el almacenamiento local del navegador.
+- Persistir los datos en **Supabase** (PostgreSQL, tablas en español: `grupos`, `miembros`, `movimientos`).
 - Navegar entre Inicio, Actividad, Balance y Perfil sin recargar la aplicación.
 
 ## Reglas de negocio
@@ -26,7 +26,7 @@ Construir una demostración móvil de Divi que permita a un grupo registrar gast
 
 ## Estados relevantes
 
-- Carga inicial mientras se restaura el estado local.
+- Carga inicial mientras se restaura el estado desde Supabase.
 - Historial vacío cuando no existen movimientos.
 - Error de validación inline al intentar guardar una carga incompleta.
 - Estado de éxito al volver inmediatamente al balance actualizado tras guardar.
@@ -34,10 +34,16 @@ Construir una demostración móvil de Divi que permita a un grupo registrar gast
 ## Fuera de alcance en esta iteración
 
 - Inicio de sesión, invitaciones y datos compartidos en tiempo real.
-- Base de datos remota, pagos reales y conciliación bancaria.
+- Pagos reales y conciliación bancaria.
 - Foto de ticket, OCR, gastos recurrentes, recordatorios y reglas de división avanzadas.
 - Edición y eliminación de movimientos.
 
 ## Próxima iteración técnica
 
-Mantener el cálculo de balances separado de la interfaz permite migrar la persistencia local a un backend con grupos, miembros, movimientos y participaciones sin reescribir las reglas de negocio.
+1. Crear flujo de "Nuevo Grupo" → nombre → agregar miembros
+2. Editar/Eliminar movimientos (PUT/DELETE)
+3. Toast notifications
+4. Reglas de división configurables
+5. Autenticación con Supabase Auth
+6. Tests
+7. Deploy
