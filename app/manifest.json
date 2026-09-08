@@ -1,0 +1,20 @@
+{
+  "name": "Divi - Gastos compartidos",
+  "short_name": "Divi",
+  "description": "Registrá y dividí gastos compartidos en pesos argentinos.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#594ff4",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml"
+    }
+  ],
+  "categories": ["finance", "productivity"],
+  "lang": "es-AR",
+  "dir": "ltr"
+}
