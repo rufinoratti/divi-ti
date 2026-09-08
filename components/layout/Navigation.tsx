@@ -1,11 +1,14 @@
 'use client';
 
 import { type Tab } from '@/hooks/useMovements';
+import { useAuth } from '@/hooks/useAuth';
+import { useRouter } from 'next/navigation';
 import {
   HomeIcon,
   ChartNoAxesCombinedIcon,
   WalletCardsIcon,
   UserRoundIcon,
+  LogOut,
 } from 'lucide-react';
 
 interface NavigationProps {
@@ -21,6 +24,14 @@ const navigation = [
 ];
 
 export function Navigation({ activeTab, onTabChange }: NavigationProps) {
+  const { logout } = useAuth();
+  const router = useRouter();
+
+  async function handleLogout() {
+    await logout();
+    router.push('/login');
+  }
+
   return (
     <nav aria-label="Navegación principal" className="fixed inset-x-0 bottom-0 border-t border-[#e7e7e7] bg-white/95 px-4 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-3 backdrop-blur-sm">
       <div className="mx-auto grid max-w-[500px] grid-cols-4 gap-1">
@@ -39,6 +50,15 @@ export function Navigation({ activeTab, onTabChange }: NavigationProps) {
             </button>
           );
         })}
+        <button
+          type="button"
+          onClick={handleLogout}
+          className="flex min-h-14 flex-col items-center justify-center gap-1 rounded-2xl text-xs font-bold text-[#b42318] transition active:scale-[0.96] hover:bg-[#fef4f4]"
+          aria-label="Cerrar sesión"
+        >
+          <LogOut aria-hidden="true" size={20} strokeWidth={1.8} />
+          Salir
+        </button>
       </div>
     </nav>
   );

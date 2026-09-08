@@ -1,0 +1,74 @@
+'use client';
+
+import { useState, type FormEvent } from 'react';
+import { MailIcon, LockIcon } from 'lucide-react';
+
+interface LoginFormProps {
+  onLogin: (userId: string, email: string) => void;
+  error?: string;
+}
+
+export function LoginForm({ onLogin, error }: LoginFormProps) {
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setIsSubmitting(true);
+    try {
+      const res = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password }),
+      });
+      const data = await res.json();
+      if (res.ok && data.user) {
+        onLogin(data.user.id, data.user.email);
+      } else {
+        console.error(data.error ?? 'Error al iniciar sesión');
+      }
+    } catch {
+      console.error('Error de conexión');
+    } finally {
+      setIsSubmitting(false);
+    }
+  }
+
+  return (
+    <main className="min-h-[100dvh] bg-white text-[#1f1f1f]">
+      <div className="mx-auto max-w-[500px] px-5 py-12 sm:px-7">
+        <div className="mt-8 space-y-7">
+          <div className="text-center">
+            <h1 className="text-3xl font-bold tracking-[-0.045em]">Bienvenido a Divi</h1>
+            <p className="mt-2 text-[#5d5d5d]">Iniciá sesión para continuar</p>
+          </div>
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div>
+              <label htmlFor="email" className="block text-sm font-medium text-[#5d5d5d]">Email</label>
+              <div className="mt-1 flex items-center rounded-2xl border border-[#e7e7e7] bg-white focus-within:border-[#594ff4]">
+                <MailIcon aria-hidden="true" className="pl-4 size-5 text-[#888888]" />
+                <input id="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="tu@email.com" required className="h-12 w-full rounded-2xl bg-transparent px-2 text-sm outline-none placeholder:text-[#888888]" />
+              </div>
+            </div>
+            <div>
+              <label htmlFor="password" className="block text-sm font-medium text-[#5d5d5d]">Contraseña</label>
+              <div className="mt-1 flex items-center rounded-2xl border border-[#e7e7e7] bg-white focus-within:border-[#594ff4]">
+                <LockIcon aria-hidden="true" className="pl-4 size-5 text-[#888888]" />
+                <input id="password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="Tu contraseña" required className="h-12 w-full rounded-2xl bg-transparent px-2 text-sm outline-none placeholder:text-[#888888]" />
+              </div>
+            </div>
+            {error && <p role="alert" className="text-sm font-medium text-[#b42318]">{error}</p>}
+            <button type="submit" disabled={isSubmitting} className="mt-6 flex min-h-13 w-full items-center justify-center gap-2 rounded-full bg-[#594ff4] px-5 text-sm font-bold text-white transition active:scale-[0.98] opacity-80 disabled:opacity-50">
+              {isSubmitting ? 'Iniciando...' : 'Iniciar sesión'}
+            </button>
+          </form>
+          <p className="text-center text-sm text-[#5d5d5d]">
+            ¿No tenés cuenta?{' '}
+            <a href="/signup" className="font-bold text-[#594ff4]">Creá una</a>
+          </p>
+        </div>
+      </div>
+    </main>
+  );
+}
