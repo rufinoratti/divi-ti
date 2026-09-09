@@ -1,7 +1,8 @@
 'use client';
 
 import { useState, useCallback, useEffect } from 'react';
-import { supabase } from '@/lib/supabase';
+import { getSupabaseBrowserClient } from '@/lib/supabase/client';
+import { type AuthSessionPayload } from '@/lib/auth/types';
 import { type Member } from '@/lib/ledger';
 
 interface AuthState {
@@ -24,16 +25,38 @@ export function useAuth() {
   });
 
   const setAuthState = useCallback(async () => {
+    const supabase = getSupabaseBrowserClient();
+
+    if (!supabase) {
+      setState((prev) => ({ ...prev, isLoading: false }));
+      return;
+    }
+
     try {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session?.user) {
-        setState((prev) => ({ ...prev, isLoading: false }));
+      const { data, error } = await supabase.auth.getUser();
+      if (error || !data.user) {
+        setState({
+          userId: null,
+          email: null,
+          memberId: null,
+          members: [],
+          isAuthenticated: false,
+          isLoading: false,
+        });
         return;
       }
-      const userId = session.user.id;
-      const email = session.user.email ?? null;
-      const { data: members } = await supabase.from('miembros').select('*').eq('usuario_id', userId);
-      const memberList = (members ?? []) as Member[];
+
+      const userId = data.user.id;
+      const email = data.user.email ?? null;
+      const { data: members } = await supabase
+        .from('miembros')
+        .select('id, nombre, iniciales')
+        .eq('usuario_id', userId);
+      const memberList = (members ?? []).map((member) => ({
+        id: member.id,
+        name: member.nombre,
+        initials: member.iniciales,
+      })) as Member[];
       const memberId = memberList.length > 0 ? memberList[0].id : null;
       setState({ userId, email, memberId, members: memberList, isAuthenticated: true, isLoading: false });
     } catch {
@@ -41,27 +64,49 @@ export function useAuth() {
     }
   }, []);
 
-  const login = useCallback((userId: string, email: string) => {
-    setState((prev) => ({ ...prev, userId, email, isAuthenticated: true, isLoading: false }));
-  }, []);
+  const setSession = useCallback(async (session: AuthSessionPayload) => {
+    const supabase = getSupabaseBrowserClient();
+    if (!supabase) throw new Error('Supabase no está configurado.');
 
-  const signup = useCallback((userId: string, email: string) => {
-    setState((prev) => ({ ...prev, userId, email, isAuthenticated: true, isLoading: false }));
-  }, []);
+    const { error } = await supabase.auth.setSession({
+      access_token: session.access_token,
+      refresh_token: session.refresh_token,
+    });
+
+    if (error) throw error;
+    await setAuthState();
+  }, [setAuthState]);
+
+  const login = useCallback((session: AuthSessionPayload) => setSession(session), [setSession]);
+
+  const signup = useCallback((session: AuthSessionPayload) => setSession(session), [setSession]);
 
   const logout = useCallback(async () => {
-    await supabase.auth.signOut();
+    const supabase = getSupabaseBrowserClient();
+
+    try {
+      // El endpoint limpia las cookies SSR; el cliente limpia su sesión local.
+      await fetch('/api/auth/logout', { method: 'POST' });
+    } catch {}
+
+    try {
+      if (supabase) await supabase.auth.signOut();
+    } catch {}
+
     setState({ userId: null, email: null, memberId: null, members: [], isAuthenticated: false, isLoading: false });
   }, []);
 
   useEffect(() => {
-    setAuthState();
+    void setAuthState();
+    const supabase = getSupabaseBrowserClient();
+    if (!supabase) return undefined;
+
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
       if (event === 'SIGNED_OUT') {
         setState({ userId: null, email: null, memberId: null, members: [], isAuthenticated: false, isLoading: false });
       }
       if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
-        setAuthState();
+        setTimeout(() => { void setAuthState(); }, 0);
       }
     });
     return () => { subscription.unsubscribe(); };

@@ -1,14 +1,8 @@
-import { createClient } from '@supabase/supabase-js';
+export { getSupabaseBrowserClient } from './supabase/client';
 
-const supabaseUrl = typeof import.meta !== 'undefined' 
-  ? String((import.meta as any).env?.VITE_SUPABASE_URL ?? '') 
-  : '';
-const supabaseAnonKey = typeof import.meta !== 'undefined'
-  ? String((import.meta as any).env?.VITE_SUPABASE_ANON_KEY ?? '')
-  : '';
+import { getSupabaseBrowserClient } from './supabase/client';
 
-if (!supabaseUrl) {
-  console.warn('VITE_SUPABASE_URL no está definida. Verificá el archivo .env.local y reiniciá el servidor con npm run dev.');
-}
-
-export const supabase = createClient(supabaseUrl, supabaseAnonKey);
+// Se mantiene este export para los módulos de datos existentes.
+// Cuando faltan las variables de entorno, queda en null y la app puede
+// mostrar el estado de configuración sin romper el render inicial.
+export const supabase = getSupabaseBrowserClient();

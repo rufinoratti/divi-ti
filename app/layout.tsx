@@ -8,6 +8,10 @@ const geistMono = Geist_Mono({ variable: '--font-geist-mono', subsets: ['latin']
 export const metadata: Metadata = {
   title: 'Divi | Gastos compartidos',
   description: 'Registrá y dividí gastos compartidos en pesos argentinos.',
+  icons: {
+    icon: '/branding/divi-mark.png',
+    apple: '/branding/divi-mark.png',
+  },
 };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {

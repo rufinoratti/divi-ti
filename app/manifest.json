@@ -9,9 +9,10 @@
   "orientation": "portrait-primary",
   "icons": [
     {
-      "src": "/favicon.svg",
-      "sizes": "any",
-      "type": "image/svg+xml"
+      "src": "/branding/divi-mark.png",
+      "sizes": "520x540",
+      "type": "image/png",
+      "purpose": "any maskable"
     }
   ],
   "categories": ["finance", "productivity"],
