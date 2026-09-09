@@ -1,7 +1,21 @@
 'use client';
 
 import { useState, type FormEvent } from 'react';
-import { MailIcon, LockIcon } from 'lucide-react';
+import { EyeIcon, EyeOffIcon, LockIcon, MailIcon } from 'lucide-react';
+import {
+  AuthFeedback,
+  AuthField,
+  AuthPageFrame,
+  AuthSubmitButton,
+} from '@/components/features/AuthPageFrame';
+import {
+  CONNECTION_ERROR_MESSAGE,
+  FORM_VALIDATION_MESSAGE,
+  readAuthApiError,
+  readAuthValidationErrors,
+  type AuthApiPayload,
+} from '@/lib/auth/client';
+import { loginSchema } from '@/lib/auth/schemas';
 import { type AuthSessionPayload } from '@/lib/auth/types';
 
 interface LoginFormProps {
@@ -12,76 +26,114 @@ interface LoginFormProps {
 export function LoginForm({ onLogin, error }: LoginFormProps) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const callbackError = typeof window !== 'undefined'
     ? new URLSearchParams(window.location.search).get('error') ?? ''
     : '';
   const [formError, setFormError] = useState(error ?? callbackError);
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
+
+  function clearFieldError(field: string) {
+    setFieldErrors((current) => {
+      if (!current[field]) return current;
+      const next = { ...current };
+      delete next[field];
+      return next;
+    });
+  }
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setFormError('');
+    setFieldErrors({});
+
+    const validation = loginSchema.safeParse({ email, password });
+    if (!validation.success) {
+      setFormError(FORM_VALIDATION_MESSAGE);
+      setFieldErrors(readAuthValidationErrors(validation.error));
+      return;
+    }
+
     setIsSubmitting(true);
+
     try {
       const res = await fetch('/api/auth/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password }),
+        body: JSON.stringify(validation.data),
       });
-      const data = await res.json() as {
-        session?: AuthSessionPayload;
-        error?: { message?: string } | string;
-      };
+      const data = await res.json() as AuthApiPayload & { session?: AuthSessionPayload };
 
       if (!res.ok || !data.session) {
-        const message = typeof data.error === 'string' ? data.error : data.error?.message;
-        setFormError(message ?? 'No pudimos iniciar sesión.');
+        const apiError = readAuthApiError(data, 'No pudimos iniciar sesión.');
+        setFormError(apiError.message);
+        setFieldErrors(apiError.fields);
         return;
       }
 
       await onLogin(data.session);
-    } catch (submitError) {
-      setFormError(submitError instanceof Error ? submitError.message : 'Error de conexión.');
+    } catch {
+      setFormError(CONNECTION_ERROR_MESSAGE);
     } finally {
       setIsSubmitting(false);
     }
   }
 
   return (
-    <main className="min-h-[100dvh] bg-white text-[#1f1f1f]">
-      <div className="mx-auto max-w-[500px] px-5 py-12 sm:px-7">
-        <div className="mt-8 space-y-7">
-          <div className="text-center">
-            <h1 className="text-3xl font-bold tracking-[-0.045em]">Bienvenido a Divi</h1>
-            <p className="mt-2 text-[#5d5d5d]">Iniciá sesión para continuar</p>
-          </div>
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div>
-              <label htmlFor="email" className="block text-sm font-medium text-[#5d5d5d]">Email</label>
-              <div className="mt-1 flex items-center rounded-2xl border border-[#e7e7e7] bg-white focus-within:border-[#594ff4]">
-                <MailIcon aria-hidden="true" className="pl-4 size-5 text-[#888888]" />
-                <input id="email" name="email" type="email" autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="tu@email.com" required className="h-12 w-full rounded-2xl bg-transparent px-2 text-sm outline-none placeholder:text-[#888888]" />
-              </div>
-            </div>
-            <div>
-              <label htmlFor="password" className="block text-sm font-medium text-[#5d5d5d]">Contraseña</label>
-              <div className="mt-1 flex items-center rounded-2xl border border-[#e7e7e7] bg-white focus-within:border-[#594ff4]">
-                <LockIcon aria-hidden="true" className="pl-4 size-5 text-[#888888]" />
-                <input id="password" name="password" type="password" autoComplete="current-password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="Tu contraseña" required className="h-12 w-full rounded-2xl bg-transparent px-2 text-sm outline-none placeholder:text-[#888888]" />
-              </div>
-            </div>
-            {formError && <p role="alert" className="text-sm font-medium text-[#b42318]">{formError}</p>}
-            <button type="submit" disabled={isSubmitting} className="mt-6 flex min-h-13 w-full items-center justify-center gap-2 rounded-full bg-[#594ff4] px-5 text-sm font-bold text-white transition active:scale-[0.98] opacity-80 disabled:opacity-50">
-              {isSubmitting ? 'Iniciando...' : 'Iniciar sesión'}
-            </button>
-          </form>
-          <a href="/forgot-password" className="block text-center text-sm font-bold text-[#594ff4]">¿Te olvidaste la contraseña?</a>
-          <p className="text-center text-sm text-[#5d5d5d]">
-            ¿No tenés cuenta?{' '}
-            <a href="/signup" className="font-bold text-[#594ff4]">Creá una</a>
-          </p>
+    <AuthPageFrame
+      title="Bienvenido a Divi"
+      description="Iniciá sesión para volver a tus grupos y movimientos."
+      note="Tu cuenta reúne los gastos que compartís con tu grupo."
+      footer={(
+        <>
+          <p>¿No tenés cuenta? <a href="/signup">Creá una</a></p>
+        </>
+      )}
+    >
+      <form onSubmit={handleSubmit} noValidate>
+        <AuthField id="email" label="Email" icon={MailIcon} error={fieldErrors.email}>
+          <input
+            id="email"
+            name="email"
+            type="email"
+            autoComplete="email"
+            value={email}
+            onChange={(event) => { setEmail(event.target.value); clearFieldError('email'); setFormError(''); }}
+            placeholder="tu@email.com"
+            required
+            aria-invalid={Boolean(fieldErrors.email)}
+            aria-describedby={fieldErrors.email ? 'email-error' : undefined}
+          />
+        </AuthField>
+        <AuthField id="password" label="Contraseña" icon={LockIcon} error={fieldErrors.password}>
+          <input
+            id="password"
+            name="password"
+            type={showPassword ? 'text' : 'password'}
+            autoComplete="current-password"
+            value={password}
+            onChange={(event) => { setPassword(event.target.value); clearFieldError('password'); setFormError(''); }}
+            placeholder="Tu contraseña"
+            required
+            aria-invalid={Boolean(fieldErrors.password)}
+            aria-describedby={fieldErrors.password ? 'password-error' : undefined}
+          />
+          <button
+            type="button"
+            className="auth-field-toggle"
+            onClick={() => setShowPassword((visible) => !visible)}
+            aria-label={showPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'}
+          >
+            {showPassword ? <EyeOffIcon aria-hidden="true" /> : <EyeIcon aria-hidden="true" />}
+          </button>
+        </AuthField>
+        <div className="auth-form-utility">
+          <a href="/forgot-password">¿Te olvidaste la contraseña?</a>
         </div>
-      </div>
-    </main>
+        <AuthFeedback message={formError} variant="error" />
+        <AuthSubmitButton label="Iniciar sesión" loadingLabel="Iniciando sesión..." isSubmitting={isSubmitting} />
+      </form>
+    </AuthPageFrame>
   );
 }

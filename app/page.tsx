@@ -40,7 +40,7 @@ export default function Home() {
       <main className="min-h-[100dvh] bg-white text-[#1f1f1f]">
         <div className="mx-auto max-w-[500px] px-5 py-6">
           <div className="mt-12 text-center space-y-4">
-            <h1 className="text-3xl font-bold tracking-[-0.045em]">Divi</h1>
+            <img src="/branding/divi-lockup.png" alt="Divi" className="mx-auto h-12 w-auto object-contain" />
             <p className="text-[#5d5d5d]">Iniciá sesión para acceder al grupo</p>
             <a href="/login" className="inline-flex min-h-13 items-center justify-center gap-2 rounded-full bg-[#594ff4] px-5 text-sm font-bold text-white transition active:scale-[0.98]">
               Iniciar sesión
