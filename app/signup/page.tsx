@@ -8,9 +8,9 @@ export default function SignupPage() {
 
   return (
     <SignupForm
-      onSignup={(userId: string, email: string) => {
-        signup(userId, email);
-        window.location.href = '/';
+      onSignup={async (session) => {
+        await signup(session);
+        window.location.assign('/');
       }}
     />
   );

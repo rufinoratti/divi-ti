@@ -14,6 +14,7 @@ import { MovementList } from '@/components/layout/MovementList';
 import { useMovements, type Tab } from '@/hooks/useMovements';
 import { useAuth } from '@/hooks/useAuth';
 import { type LedgerMovement } from '@/lib/ledger';
+import { GroupOnboarding } from '@/components/features/GroupOnboarding';
 
 type ActivityFilter = 'all' | LedgerMovement['kind'];
 
@@ -34,7 +35,7 @@ export default function Home() {
 
   if (isLoading || !isReady) return <AppLoading />;
 
-  if (!isAuthenticated || !memberId) {
+  if (!isAuthenticated) {
     return (
       <main className="min-h-[100dvh] bg-white text-[#1f1f1f]">
         <div className="mx-auto max-w-[500px] px-5 py-6">
@@ -49,6 +50,8 @@ export default function Home() {
       </main>
     );
   }
+
+  if (!memberId) return <GroupOnboarding />;
 
   const currentMemberId = memberId;
   const currentMember = members.find((m) => m.id === currentMemberId);

@@ -1,12 +1,27 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { supabase } from '@/lib/supabase';
+import {
+  authErrorResponse,
+  configurationErrorResponse,
+  internalErrorResponse,
+} from '@/lib/auth/http';
+import { createSupabaseRouteClient } from '@/lib/supabase/server';
 
-export async function POST(_request: NextRequest) {
+export async function POST(request: NextRequest) {
   try {
+    const response = NextResponse.json({ ok: true, message: 'Sesión cerrada.' });
+    const { supabase, applyCookies } = createSupabaseRouteClient(request);
     const { error } = await supabase.auth.signOut();
-    if (error) return NextResponse.json({ error: error.message }, { status: 500 });
-    return NextResponse.json({ message: 'Signed out' }, { status: 200 });
-  } catch (error: any) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+
+    if (error) return authErrorResponse(error, 401, 'No pudimos cerrar la sesión.');
+
+    response.headers.set('Cache-Control', 'private, no-store');
+    applyCookies(response);
+    return response;
+  } catch (error) {
+    if (error instanceof Error && error.message.startsWith('Supabase no está configurado')) {
+      return configurationErrorResponse();
+    }
+
+    return internalErrorResponse();
   }
 }

@@ -8,9 +8,9 @@ export default function LoginPage() {
 
   return (
     <LoginForm
-      onLogin={(userId: string, email: string) => {
-        login(userId, email);
-        window.location.href = '/';
+      onLogin={async (session) => {
+        await login(session);
+        window.location.assign('/');
       }}
     />
   );

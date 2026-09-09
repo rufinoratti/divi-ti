@@ -2,7 +2,6 @@
 
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { type Member, type LedgerMovement, calculateBalances, calculateSettlements } from '@/lib/ledger';
-import { supabase } from '@/lib/supabase';
 
 export type Tab = 'inicio' | 'actividad' | 'balance' | 'perfil';
 
@@ -10,35 +9,83 @@ export function useMovements(memberId?: string) {
   const [members, setMembers] = useState<Member[]>([]);
   const [movements, setMovements] = useState<LedgerMovement[]>([]);
   const [groupName, setGroupName] = useState<string>('');
+  const [groupId, setGroupId] = useState<string | null>(null);
   const [isReady, setIsReady] = useState(false);
 
   useEffect(() => {
-    async function loadFromSupabase() {
+    setIsReady(false);
+    setMembers([]);
+    setMovements([]);
+    setGroupId(null);
+    setGroupName('');
+
+    async function loadFromApi() {
       try {
-        const { data: groups } = await supabase.from('grupos').select('*').limit(1);
-        if (!groups || groups.length === 0) { setIsReady(true); return; }
-        const groupId = groups[0].id;
-        setGroupName(groups[0].nombre ?? 'Grupo');
+        const groupsResponse = await fetch('/api/groups', { cache: 'no-store' });
+        if (!groupsResponse.ok) return;
 
-        const { data: membersData } = await supabase.from('miembros').select('*').eq('grupo_id', groupId);
-        if (membersData && membersData.length > 0) setMembers(membersData as Member[]);
+        const groupsData = await groupsResponse.json() as {
+          groups?: Array<{
+            id: string;
+            nombre: string;
+            miembros?: Array<{ id: string; nombre: string; iniciales: string }>;
+          }>;
+        };
+        const group = groupsData.groups?.[0];
+        if (!group) return;
 
-        const { data: movementsData } = await supabase.from('movimientos').select('*').order('creado_en', { ascending: false });
-        if (movementsData && movementsData.length > 0) setMovements(movementsData as LedgerMovement[]);
+        setGroupId(group.id);
+        setGroupName(group.nombre || 'Grupo');
+        setMembers((group.miembros ?? []).map((member) => ({
+          id: member.id,
+          name: member.nombre,
+          initials: member.iniciales,
+        })));
+
+        const movementsResponse = await fetch(`/api/movements?group_id=${encodeURIComponent(group.id)}`, { cache: 'no-store' });
+        if (!movementsResponse.ok) return;
+
+        const movementsData = await movementsResponse.json() as { movements?: LedgerMovement[] };
+        setMovements(movementsData.movements ?? []);
       } catch {}
       finally { setIsReady(true); }
     }
-    loadFromSupabase();
+    void loadFromApi();
   }, [memberId]);
 
   const addMovement = useCallback((movement: LedgerMovement) => {
     setMovements((current) => [movement, ...current]);
-    const upsert = async () => {
-      const { data, error: _error } = await supabase.from('movimientos').insert(movement).select().single();
-      if (data) setMovements((current) => [data, ...current]);
+    if (!groupId) return;
+
+    const save = async () => {
+      const response = await fetch('/api/movements', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          groupId,
+          kind: movement.kind,
+          description: movement.description,
+          amount: movement.amount,
+          category: movement.category,
+          paidBy: movement.paidBy,
+          recipient: movement.recipient ?? null,
+          participants: movement.participants,
+        }),
+      });
+
+      if (!response.ok) throw new Error('No se pudo guardar el movimiento.');
+      const data = await response.json() as { movement?: LedgerMovement };
+      if (!data.movement) throw new Error('El servidor no devolvió el movimiento.');
+
+      setMovements((current) => current.map((item) => (
+        item.id === movement.id ? data.movement! : item
+      )));
     };
-    upsert().catch(() => {});
-  }, []);
+
+    save().catch(() => {
+      setMovements((current) => current.filter((item) => item.id !== movement.id));
+    });
+  }, [groupId]);
 
   const balances = useMemo(() => calculateBalances(members, movements), [movements, members]);
   const settlements = useMemo(() => calculateSettlements(members, balances), [balances]);
