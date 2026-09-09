@@ -39,6 +39,11 @@ export function readAuthValidationErrors(error: {
   return fields;
 }
 
+export function readSafeNextPath(value: string | null) {
+  if (!value || !value.startsWith('/') || value.startsWith('//')) return '/';
+  return value;
+}
+
 export const CONNECTION_ERROR_MESSAGE =
   'No pudimos comunicarnos con Divi. Revisá tu conexión y volvé a intentar.';
 

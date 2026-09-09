@@ -19,7 +19,7 @@ export async function GET(request: NextRequest) {
 
     const { data, error } = await supabase
       .from('grupos')
-      .select('id, nombre, creado_en')
+      .select('id, nombre, creado_por, creado_en')
       .order('creado_en', { ascending: false });
     if (error) return internalErrorResponse();
 
@@ -62,7 +62,7 @@ export async function POST(request: NextRequest) {
     const { data: group, error: groupError } = await supabase
       .from('grupos')
       .insert({ nombre: parsed.data.name, creado_por: userData.user.id })
-      .select('id, nombre, creado_en')
+      .select('id, nombre, creado_por, creado_en')
       .single();
     if (groupError || !group) return internalErrorResponse();
 

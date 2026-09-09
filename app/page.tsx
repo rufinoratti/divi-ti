@@ -15,12 +15,14 @@ import { useMovements, type Tab } from '@/hooks/useMovements';
 import { useAuth } from '@/hooks/useAuth';
 import { type LedgerMovement } from '@/lib/ledger';
 import { GroupOnboarding } from '@/components/features/GroupOnboarding';
+import { GuestOnboarding } from '@/components/features/GuestOnboarding';
+import { InviteMemberForm } from '@/components/features/InviteMemberForm';
 
 type ActivityFilter = 'all' | LedgerMovement['kind'];
 
 export default function Home() {
-  const { memberId, isAuthenticated, isLoading } = useAuth();
-  const { movements, isReady, addMovement, balances, settlements, members, groupName } = useMovements(memberId ?? undefined);
+  const { memberId, userId, isAuthenticated, isLoading } = useAuth();
+  const { movements, isReady, addMovement, balances, settlements, members, groupId, groupName, groupOwnerId } = useMovements(memberId ?? undefined);
   const [activeTab, setActiveTab] = useState<Tab>('inicio');
   const [activityFilter, setActivityFilter] = useState<ActivityFilter>('all');
   const [composerOpen, setComposerOpen] = useState(false);
@@ -33,23 +35,11 @@ export default function Home() {
     addMovement(movement);
   };
 
-  if (isLoading || !isReady) return <AppLoading />;
+  if (isLoading) return <AppLoading />;
 
-  if (!isAuthenticated) {
-    return (
-      <main className="min-h-[100dvh] bg-white text-[#1f1f1f]">
-        <div className="mx-auto max-w-[500px] px-5 py-6">
-          <div className="mt-12 text-center space-y-4">
-            <img src="/branding/divi-lockup.png" alt="Divi" className="mx-auto h-12 w-auto object-contain" />
-            <p className="text-[#5d5d5d]">Iniciá sesión para acceder al grupo</p>
-            <a href="/login" className="inline-flex min-h-13 items-center justify-center gap-2 rounded-full bg-[#594ff4] px-5 text-sm font-bold text-white transition active:scale-[0.98]">
-              Iniciar sesión
-            </a>
-          </div>
-        </div>
-      </main>
-    );
-  }
+  if (!isAuthenticated) return <GuestOnboarding />;
+
+  if (!isReady) return <AppLoading />;
 
   if (!memberId) return <GroupOnboarding />;
 
@@ -86,7 +76,15 @@ export default function Home() {
 
         {activeTab === 'balance' && <BalanceSection members={members} balances={balances} settlements={settlements} />}
 
-        {activeTab === 'perfil' && <ProfileSection currentMemberId={currentMemberId} members={members} />}
+        {activeTab === 'perfil' && (
+          <ProfileSection
+            currentMemberId={currentMemberId}
+            members={members}
+            groupName={groupName}
+            groupId={groupId}
+            canInvite={userId === groupOwnerId}
+          />
+        )}
       </div>
 
       <Navigation activeTab={activeTab} onTabChange={setActiveTab} />

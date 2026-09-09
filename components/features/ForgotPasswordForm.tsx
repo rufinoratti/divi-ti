@@ -56,7 +56,6 @@ export function ForgotPasswordForm() {
       }
 
       setSuccessMessage(data.message ?? 'Revisá tu email para continuar.');
-      setStatusMessage('Solicitud completada.');
     } catch {
       setError(CONNECTION_ERROR_MESSAGE);
     } finally {

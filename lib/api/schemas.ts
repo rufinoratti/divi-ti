@@ -35,6 +35,31 @@ export const createMemberSchema = z.object({
   userId: uuid.optional().nullable(),
 });
 
+const invitationEmail = z
+  .string({ message: 'Ingresá el email de la persona invitada.' })
+  .trim()
+  .toLowerCase()
+  .email('Ingresá un email válido.');
+
+export const createInvitationSchema = z.object({
+  groupId: uuid,
+  email: invitationEmail,
+  name: z
+    .string()
+    .trim()
+    .min(2, 'El nombre debe tener al menos 2 caracteres.')
+    .max(80, 'El nombre no puede superar los 80 caracteres.')
+    .optional(),
+});
+
+export const invitationTokenSchema = z.object({
+  token: z
+    .string({ message: 'El enlace de invitación no es válido.' })
+    .trim()
+    .min(20, 'El enlace de invitación no es válido.')
+    .max(200, 'El enlace de invitación no es válido.'),
+});
+
 const movementKind = z.enum(['expense', 'loan']);
 const movementCategory = z.enum(['Alquiler', 'Comida', 'Transporte', 'Compras', 'Otros', 'Préstamo']);
 

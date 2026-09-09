@@ -66,7 +66,6 @@ export function ResetPasswordForm() {
       }
 
       setSuccessMessage(data.message ?? 'Contraseña actualizada.');
-      setStatusMessage('Cambio completado.');
       setPassword('');
       setConfirmPassword('');
     } catch {
