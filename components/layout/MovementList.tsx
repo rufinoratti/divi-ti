@@ -9,6 +9,7 @@ interface MovementListProps {
   members: Member[];
   currentMemberId: string;
   emptyLabel?: string;
+  onEditMovement?: (movement: LedgerMovement) => void;
 }
 
 export function MovementList({
@@ -16,6 +17,7 @@ export function MovementList({
   members,
   currentMemberId,
   emptyLabel = 'Todavía no hay movimientos.',
+  onEditMovement,
 }: MovementListProps) {
   if (!movements.length) {
     return (
@@ -30,7 +32,7 @@ export function MovementList({
   return (
     <div className="space-y-3">
       {movements.map((movement) => (
-        <MovementItem key={movement.id} movement={movement} members={members} currentMemberId={currentMemberId} />
+        <MovementItem key={movement.id} movement={movement} members={members} currentMemberId={currentMemberId} onEdit={onEditMovement} />
       ))}
     </div>
   );

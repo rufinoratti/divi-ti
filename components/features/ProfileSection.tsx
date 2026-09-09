@@ -31,10 +31,31 @@ export function ProfileSection({ currentMemberId, members, groupName, groupId, c
         <div className="mt-6 space-y-4 border-t border-[#e7e7e7] pt-5 text-sm">
           <ProfileRow label="Idioma" value="Español" />
           <ProfileRow label="Moneda" value="Pesos argentinos (ARS)" />
-          <ProfileRow label="Datos" value="Guardados en este dispositivo" />
+          <ProfileRow label="Datos" value="Guardados en tu cuenta" />
         </div>
       </section>
       {canInvite && groupId && <InviteMemberForm groupId={groupId} />}
+
+      <section className="mt-7 rounded-[30px] border border-[#e7e7e7] p-6" aria-labelledby="members-title">
+        <div className="flex items-start justify-between gap-4">
+          <div>
+            <h2 id="members-title" className="text-xl font-bold tracking-[-0.035em]">Integrantes</h2>
+            <p className="mt-1 text-sm text-[#5d5d5d]">Personas que participan de los gastos del grupo.</p>
+          </div>
+          <span className="rounded-full bg-[#f0efff] px-3 py-1 text-xs font-bold text-[#594ff4]">{members.length}</span>
+        </div>
+        <div className="mt-5 space-y-3">
+          {members.map((member) => (
+            <div key={member.id} className="flex items-center gap-3 rounded-2xl bg-[#f6f6f6] px-3 py-2.5">
+              <Avatar member={member} size="small" />
+              <div className="min-w-0 flex-1">
+                <p className="truncate text-sm font-bold">{member.name}</p>
+                <p className="text-xs text-[#5d5d5d]">{member.id === currentMemberId ? 'Vos' : 'Integrante del grupo'}</p>
+              </div>
+            </div>
+          ))}
+        </div>
+      </section>
 
       <section className="mt-7 rounded-[30px] border border-[#e7e7e7] p-6">
         <UsersIcon aria-hidden="true" size={23} className="text-[#594ff4]" strokeWidth={1.8} />

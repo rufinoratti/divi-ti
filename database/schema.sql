@@ -206,10 +206,9 @@ comment on column public.movimiento_participantes.monto_parte is
 -- 5. Seguridad para la API de Supabase
 -- ============================================================
 --
--- Esta primera estructura queda preparada para Supabase Auth. La aplicación
--- actual todavía usa datos locales, por lo que no necesita estas tablas para
--- funcionar. Cuando agreguemos login, cada grupo será propiedad de su creador
--- y podrá ser consultado por el rol authenticated.
+-- La aplicación usa Supabase Auth. Cada grupo es propiedad de su creador y
+-- también puede ser consultado por integrantes autenticados mediante la
+-- función privada de pertenencia definida más abajo.
 
 alter table public.grupos enable row level security;
 alter table public.miembros enable row level security;

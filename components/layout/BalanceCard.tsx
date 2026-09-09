@@ -21,7 +21,7 @@ export function BalanceCard({ currentBalance, totalExpenses, memberCount, onView
         </p>
         <div className="mt-6 grid grid-cols-2 gap-3 border-t border-[#e7e7e7] pt-5">
           <div>
-            <p className="text-xs font-medium text-[#888888]">Gastos del mes</p>
+            <p className="text-xs font-medium text-[#888888]">Gastos del grupo</p>
             <p className="mt-1 text-lg font-bold tracking-[-0.03em] tabular-nums">{formatARS(totalExpenses)}</p>
           </div>
           <div>

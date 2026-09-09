@@ -22,6 +22,7 @@ export type LedgerMovement = {
   recipient?: string;
   category: MovementCategory;
   participants: string[];
+  participantShares?: Record<string, number>;
   createdAt: string;
 };
 
@@ -32,6 +33,26 @@ export type Settlement = {
 };
 
 const roundCurrency = (value: number) => Math.round(value * 100) / 100;
+
+export function splitEqualAmount(amount: number, participantCount: number) {
+  if (participantCount <= 0) return [];
+
+  const cents = Math.round(amount * 100);
+  const baseCents = Math.floor(cents / participantCount);
+  const remainder = cents % participantCount;
+
+  return Array.from({ length: participantCount }, (_, index) => (
+    (baseCents + (index < remainder ? 1 : 0)) / 100
+  ));
+}
+
+export function getMovementParticipantShare(movement: LedgerMovement, memberId: string) {
+  if (movement.kind !== 'expense' || !movement.participants.includes(memberId)) return 0;
+  if (movement.participantShares?.[memberId] !== undefined) return movement.participantShares[memberId];
+
+  const index = movement.participants.indexOf(memberId);
+  return splitEqualAmount(movement.amount, movement.participants.length)[index] ?? 0;
+}
 
 export function calculateBalances(
   members: Member[],
@@ -51,11 +72,10 @@ export function calculateBalances(
     const participants = movement.participants.length
       ? movement.participants
       : members.map((member) => member.id);
-    const share = movement.amount / participants.length;
 
     balances[movement.paidBy] += movement.amount;
     for (const participant of participants) {
-      balances[participant] -= share;
+      balances[participant] -= getMovementParticipantShare({ ...movement, participants }, participant);
     }
   }
 

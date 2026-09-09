@@ -144,3 +144,5 @@ export const createMovementSchema = z
       }
     }
   });
+
+export const updateMovementSchema = z.object({ movementId: uuid }).and(createMovementSchema);

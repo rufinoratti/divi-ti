@@ -1,49 +1,85 @@
-# Requerimientos - Iteración 1
+# Requerimientos funcionales de Divi
 
-## Objetivo
+## Contexto
 
-Construir una demostración móvil de Divi que permita a un grupo registrar gastos compartidos y préstamos individuales, y entender el saldo neto de cada integrante sin cálculos manuales.
+Divi es una PWA académica para que grupos de amigos, parejas, familiares o compañeros de departamento registren gastos compartidos y préstamos puntuales en pesos argentinos. La aplicación calcula el balance de cada integrante para evitar cuentas manuales.
 
-## Alcance funcional
+El proyecto se construye por iteraciones. En esta etapa priorizamos un flujo pequeño pero completo y fácil de demostrar.
 
-- Mostrar un grupo de demostración y sus cuatro integrantes.
-- Registrar un gasto grupal por texto, importe, categoría y persona que pagó.
-- Dividir cada gasto grupal en partes iguales entre los integrantes del grupo.
-- Registrar un préstamo puntual de una persona a otra.
-- Recalcular el balance neto de cada integrante luego de cada movimiento.
-- Mostrar quién debe pagar a quién para saldar el grupo.
-- Listar los movimientos recientes y permitir filtrarlos por tipo.
-- Persistir los datos en **Supabase** (PostgreSQL, tablas en español: `grupos`, `miembros`, `movimientos`).
-- Navegar entre Inicio, Actividad, Balance y Perfil sin recargar la aplicación.
+## Estado de la base funcional
 
-## Reglas de negocio
+- Registro, inicio de sesión, cierre de sesión y persistencia de sesión con Supabase Auth.
+- Creación de un grupo para el usuario autenticado.
+- Invitación por enlace y aceptación de integrantes.
+- Acceso a grupos, miembros y movimientos protegido por pertenencia y RLS.
+- Navegación entre Inicio, Actividad, Balance y Perfil sin recargar la aplicación.
 
-- Un gasto grupal acredita el importe completo a quien pagó y debita una parte igual a cada integrante incluido.
-- Un préstamo acredita el importe a quien presta y debita el mismo importe a quien lo recibe.
-- La suma de todos los balances debe ser cero.
-- Los importes se muestran en ARS y las etiquetas se muestran en español.
-- Una carga necesita descripción e importe mayor a cero. Un préstamo también necesita una persona receptora distinta a quien presta.
+## Iteración actual: gastos compartidos
 
-## Estados relevantes
+### Objetivo
 
-- Carga inicial mientras se restaura el estado desde Supabase.
-- Historial vacío cuando no existen movimientos.
-- Error de validación inline al intentar guardar una carga incompleta.
-- Estado de éxito al volver inmediatamente al balance actualizado tras guardar.
+Permitir que un integrante registre un gasto en ARS, seleccione quiénes participaron y vea el balance recalculado inmediatamente.
 
-## Fuera de alcance en esta iteración
+### Requerimientos funcionales
 
-- Inicio de sesión, invitaciones y datos compartidos en tiempo real.
+- RF-GAS-01: El usuario autenticado debe poder abrir el formulario “Nuevo movimiento” desde Inicio.
+- RF-GAS-02: El formulario debe permitir cargar descripción, importe, categoría y persona que pagó.
+- RF-GAS-03: El importe debe aceptar pesos argentinos y ser mayor a cero.
+- RF-GAS-04: El usuario debe poder seleccionar y quitar participantes del gasto.
+- RF-GAS-05: El sistema debe dividir el gasto en partes iguales entre las personas seleccionadas.
+- RF-GAS-06: El sistema debe persistir el movimiento y sus participantes en Supabase.
+- RF-GAS-07: El movimiento guardado debe aparecer en Inicio y Actividad sin recargar la aplicación.
+- RF-GAS-08: El balance personal y el balance por integrante deben recalcularse al guardar.
+- RF-GAS-09: Actividad debe permitir filtrar entre todos, gastos y préstamos.
+- RF-GAS-10: El usuario debe poder visualizar los integrantes actuales del grupo.
+- RF-GAS-11: El usuario debe poder editar un movimiento existente y modificar sus participantes.
+
+### Reglas de negocio
+
+- Un gasto acredita el importe completo a quien pagó.
+- Un gasto debita una parte igual a cada participante seleccionado.
+- La persona que pagó puede participar o no del reparto.
+- Un préstamo acredita el importe a quien presta y debita el mismo importe a quien recibe.
+- Un préstamo requiere una persona receptora distinta de quien presta.
+- La suma de los balances del grupo debe ser cero.
+- Los importes se muestran únicamente en ARS y las etiquetas se muestran en español.
+- No se permiten participantes repetidos ni personas que no pertenezcan al grupo.
+
+### Estados de interfaz
+
+- Carga inicial mientras se recuperan grupo, integrantes y movimientos.
+- Estado vacío cuando todavía no existen movimientos.
+- Validación inline con mensajes específicos junto al formulario.
+- CTA “Guardando movimiento…” mientras se persiste la carga.
+- CTA “Actualizando movimiento…” al editar un gasto existente.
+- Error de permisos, conexión o validación sin cerrar el formulario.
+- Balance e historial actualizados al completar correctamente.
+
+## Criterios de aceptación de la iteración
+
+1. Un usuario autenticado con un grupo puede abrir “Agregar movimiento”.
+2. Puede seleccionar sólo parte de los integrantes, por ejemplo dos de tres.
+3. Al guardar un gasto de $1.000 entre dos personas, cada participante recibe una parte de $500.
+4. Si paga una de esas personas, su balance neto queda acreditado por $500 y la otra persona queda debitada por $500.
+5. El gasto queda disponible luego de refrescar la página.
+6. Un importe vacío, cero o negativo no se envía al servidor.
+7. Si falla la persistencia, el usuario recibe un mensaje propio y puede reintentar.
+8. Al editar un gasto existente, sus participantes se cargan previamente y el balance se recalcula al guardar.
+
+## Fuera de alcance por ahora
+
 - Pagos reales y conciliación bancaria.
-- Foto de ticket, OCR, gastos recurrentes, recordatorios y reglas de división avanzadas.
-- Edición y eliminación de movimientos.
+- Foto de ticket, OCR, gastos recurrentes y recordatorios.
+- Reglas de división por porcentajes o importes personalizados.
+- Eliminación de movimientos.
+- Tiempo real entre varios navegadores.
+- Multimoneda y traducciones.
 
-## Próxima iteración técnica
+## Próximas iteraciones
 
-1. Crear flujo de "Nuevo Grupo" → nombre → agregar miembros
-2. Editar/Eliminar movimientos (PUT/DELETE)
-3. Toast notifications
-4. Reglas de división configurables
-5. Autenticación con Supabase Auth
-6. Tests
-7. Deploy
+1. Eliminar movimientos.
+2. Mejorar la administración del grupo e integrantes.
+3. Registrar y confirmar pagos para cerrar deudas.
+4. Reglas de división configurables.
+5. Dashboard y métricas del grupo.
+6. Pruebas automatizadas y preparación del deploy académico.

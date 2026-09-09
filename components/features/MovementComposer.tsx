@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, type FormEvent } from 'react';
+import { useEffect, useState, type FormEvent } from 'react';
 import { XIcon } from 'lucide-react';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Field } from '@/components/layout/Field';
@@ -11,30 +11,118 @@ interface MovementComposerProps {
   onOpenChange: (open: boolean) => void;
   members: Member[];
   currentMemberId: string;
-  onSubmit: (movement: LedgerMovement) => void;
+  editingMovement?: LedgerMovement | null;
+  onSubmit: (movement: LedgerMovement) => Promise<void> | void;
 }
 
-const categoryOptions: MovementCategory[] = ['Comida', 'Compras', 'Transporte', 'Alquiler'];
+const categoryOptions: MovementCategory[] = ['Comida', 'Compras', 'Transporte', 'Alquiler', 'Otros'];
 
-export function MovementComposer({ open, onOpenChange, members, currentMemberId, onSubmit }: MovementComposerProps) {
+export function MovementComposer({ open, onOpenChange, members, currentMemberId, editingMovement, onSubmit }: MovementComposerProps) {
   const [kind, setKind] = useState<MovementKind>('expense');
   const [description, setDescription] = useState('');
   const [amount, setAmount] = useState('');
   const [payer, setPayer] = useState(currentMemberId);
-  const [recipient, setRecipient] = useState('nico');
+  const [recipient, setRecipient] = useState('');
   const [category, setCategory] = useState<MovementCategory>('Comida');
+  const [participants, setParticipants] = useState<string[]>([]);
   const [formError, setFormError] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  function resetComposer() { setKind('expense'); setDescription(''); setAmount(''); setPayer(currentMemberId); setRecipient('nico'); setCategory('Comida'); setFormError(''); }
+  useEffect(() => {
+    if (!open) return;
+
+    if (editingMovement) {
+      setKind(editingMovement.kind);
+      setDescription(editingMovement.description);
+      setAmount(String(editingMovement.amount).replace('.', ','));
+      setPayer(editingMovement.paidBy);
+      setRecipient(editingMovement.recipient ?? '');
+      setCategory(editingMovement.category);
+      setParticipants(editingMovement.participants);
+      setFormError('');
+      return;
+    }
+
+    setKind('expense');
+    setDescription('');
+    setAmount('');
+    setPayer(currentMemberId);
+    setRecipient(members.find((member) => member.id !== currentMemberId)?.id ?? '');
+    setCategory('Comida');
+    setParticipants(members.map((member) => member.id));
+    setFormError('');
+  }, [currentMemberId, editingMovement, members, open]);
+
+  function resetComposer() {
+    setKind('expense');
+    setDescription('');
+    setAmount('');
+    setPayer(currentMemberId);
+    setRecipient(members.find((member) => member.id !== currentMemberId)?.id ?? '');
+    setCategory('Comida');
+    setParticipants(members.map((member) => member.id));
+    setFormError('');
+    setIsSubmitting(false);
+  }
+
   function closeComposer() { onOpenChange(false); resetComposer(); }
 
-  function submitMovement(event: FormEvent<HTMLFormElement>) {
+  function toggleParticipant(memberId: string) {
+    setParticipants((current) => current.includes(memberId)
+      ? current.filter((id) => id !== memberId)
+      : [...current, memberId]);
+    setFormError('');
+  }
+
+  async function submitMovement(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    if (isSubmitting) return;
+
     const parsedAmount = Number(amount.replace(',', '.'));
-    if (!description.trim() || !Number.isFinite(parsedAmount) || parsedAmount <= 0) { setFormError('Completá una descripción y un importe mayor a cero.'); return; }
-    if (kind === 'loan' && (!recipient || recipient === payer)) { setFormError('Elegí una persona distinta a quien presta el dinero.'); return; }
-    const movement: LedgerMovement = { id: `movement-${Date.now()}`, kind, description: description.trim(), amount: parsedAmount, paidBy: payer, recipient: kind === 'loan' ? recipient : undefined, category: kind === 'loan' ? 'Préstamo' : category, participants: kind === 'expense' ? members.map((m) => m.id) : [], createdAt: new Date().toISOString() };
-    onSubmit(movement); closeComposer();
+
+    if (!description.trim()) {
+      setFormError('Contanos qué gasto fue para que el grupo lo reconozca.');
+      return;
+    }
+
+    if (!Number.isFinite(parsedAmount) || parsedAmount <= 0) {
+      setFormError('Ingresá un importe mayor a cero.');
+      return;
+    }
+
+    if (kind === 'expense' && participants.length === 0) {
+      setFormError('Elegí al menos una persona para repartir este gasto.');
+      return;
+    }
+
+    if (kind === 'loan' && (!recipient || recipient === payer)) {
+      setFormError('Elegí una persona distinta a quien presta el dinero.');
+      return;
+    }
+
+    const movement: LedgerMovement = {
+      id: editingMovement?.id ?? `movement-${Date.now()}`,
+      kind,
+      description: description.trim(),
+      amount: parsedAmount,
+      paidBy: payer,
+      recipient: kind === 'loan' ? recipient : undefined,
+      category: kind === 'loan' ? 'Préstamo' : category,
+      participants: kind === 'expense' ? participants : [],
+      createdAt: new Date().toISOString(),
+    };
+
+    setFormError('');
+    setIsSubmitting(true);
+
+    try {
+      await onSubmit(movement);
+      closeComposer();
+    } catch (error) {
+      setFormError(error instanceof Error ? error.message : 'No pudimos guardar el movimiento. Probá de nuevo.');
+    } finally {
+      setIsSubmitting(false);
+    }
   }
 
   return (
@@ -44,8 +132,8 @@ export function MovementComposer({ open, onOpenChange, members, currentMemberId,
           <DialogHeader>
             <div className="flex items-start justify-between gap-4">
               <div>
-                <DialogTitle className="text-2xl font-bold tracking-[-0.04em]">Nuevo movimiento</DialogTitle>
-                <DialogDescription className="mt-2 leading-6 text-[#5d5d5d]">Registralo ahora. El balance se recalcula al guardar.</DialogDescription>
+              <DialogTitle className="text-2xl font-bold tracking-[-0.04em]">{editingMovement ? 'Editar movimiento' : 'Nuevo movimiento'}</DialogTitle>
+              <DialogDescription className="mt-2 leading-6 text-[#5d5d5d]">{editingMovement ? 'Actualizá los datos y recalculamos el balance.' : 'Registralo ahora. El balance se recalcula al guardar.'}</DialogDescription>
               </div>
               <button type="button" onClick={closeComposer} aria-label="Cerrar" className="grid size-10 shrink-0 place-items-center rounded-full bg-[#f6f6f6] text-[#1f1f1f] active:scale-[0.96]"><XIcon aria-hidden="true" size={18} /></button>
             </div>
@@ -67,12 +155,31 @@ export function MovementComposer({ open, onOpenChange, members, currentMemberId,
             ) : (
               <>
                 <Field label="Categoría" htmlFor="category"><select id="category" value={category} onChange={(e) => setCategory(e.target.value as MovementCategory)} className="h-12 w-full rounded-2xl border border-[#e7e7e7] bg-white px-4 text-sm outline-none focus:border-[#594ff4]">{categoryOptions.map((o) => <option key={o}>{o}</option>)}</select></Field>
-                <p className="rounded-2xl bg-[#f6f6f6] px-4 py-3 text-xs leading-5 text-[#5d5d5d]">Se divide por partes iguales entre las {members.length} personas del grupo.</p>
+                <fieldset className="rounded-2xl border border-[#e7e7e7] p-4">
+                  <legend className="px-1 text-sm font-bold">Participan del gasto</legend>
+                  <div className="mt-3 space-y-2">
+                    {members.map((member) => {
+                      const selected = participants.includes(member.id);
+                      return (
+                        <label key={member.id} className={`flex cursor-pointer items-center justify-between rounded-xl px-3 py-2.5 text-sm transition ${selected ? 'bg-[#f0efff] text-[#594ff4]' : 'bg-[#f6f6f6] text-[#5d5d5d]'}`}>
+                          <span className="flex items-center gap-2 font-medium">
+                            <input type="checkbox" checked={selected} onChange={() => toggleParticipant(member.id)} className="size-4 accent-[#594ff4]" />
+                            {member.name}
+                          </span>
+                          {member.id === payer && <span className="text-xs font-bold">Pagó</span>}
+                        </label>
+                      );
+                    })}
+                  </div>
+                  <p className="mt-3 text-xs leading-5 text-[#5d5d5d]">Se reparte en partes iguales entre las {participants.length} personas seleccionadas.</p>
+                </fieldset>
               </>
             )}
           </div>
           {formError && <p role="alert" className="mt-4 text-sm font-medium text-[#b42318]">{formError}</p>}
-          <button type="submit" className="mt-6 flex min-h-13 w-full items-center justify-center gap-2 rounded-full bg-[#594ff4] px-5 text-sm font-bold text-white transition active:scale-[0.98]"><svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 5v14M5 12h14" /></svg> Guardar movimiento</button>
+          <button type="submit" disabled={isSubmitting} className="mt-6 flex min-h-13 w-full items-center justify-center gap-2 rounded-full bg-[#594ff4] px-5 text-sm font-bold text-white transition active:scale-[0.98] disabled:cursor-wait disabled:opacity-70">
+            {isSubmitting ? <><span aria-hidden="true" className="size-4 animate-spin rounded-full border-2 border-white/35 border-t-white" /> {editingMovement ? 'Actualizando movimiento...' : 'Guardando movimiento...'}</> : <><svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 5v14M5 12h14" /></svg> {editingMovement ? 'Actualizar movimiento' : 'Guardar movimiento'}</>}
+          </button>
         </form>
       </DialogContent>
     </Dialog>

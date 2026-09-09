@@ -11,6 +11,7 @@ interface ActivitySectionProps {
   currentMemberId: string;
   activityFilter: ActivityFilter;
   onActivityFilterChange: (filter: ActivityFilter) => void;
+  onEditMovement?: (movement: LedgerMovement) => void;
 }
 
 export function ActivitySection({
@@ -19,6 +20,7 @@ export function ActivitySection({
   currentMemberId,
   activityFilter,
   onActivityFilterChange,
+  onEditMovement,
 }: ActivitySectionProps) {
   return (
     <section className="mt-8" aria-labelledby="activity-title">
@@ -41,7 +43,7 @@ export function ActivitySection({
         ))}
       </div>
       <div className="mt-6">
-        <MovementList movements={movements} members={members} currentMemberId={currentMemberId} emptyLabel="No hay movimientos para este filtro." />
+        <MovementList movements={movements} members={members} currentMemberId={currentMemberId} emptyLabel="No hay movimientos para este filtro." onEditMovement={onEditMovement} />
       </div>
     </section>
   );

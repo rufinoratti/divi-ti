@@ -16,23 +16,49 @@ import { useAuth } from '@/hooks/useAuth';
 import { type LedgerMovement } from '@/lib/ledger';
 import { GroupOnboarding } from '@/components/features/GroupOnboarding';
 import { GuestOnboarding } from '@/components/features/GuestOnboarding';
-import { InviteMemberForm } from '@/components/features/InviteMemberForm';
 
 type ActivityFilter = 'all' | LedgerMovement['kind'];
 
 export default function Home() {
   const { memberId, userId, isAuthenticated, isLoading } = useAuth();
-  const { movements, isReady, addMovement, balances, settlements, members, groupId, groupName, groupOwnerId } = useMovements(memberId ?? undefined);
+  const { movements, isReady, addMovement, updateMovement, refreshMovements, balances, settlements, members, groupId, groupName, groupOwnerId } = useMovements(memberId ?? undefined);
   const [activeTab, setActiveTab] = useState<Tab>('inicio');
   const [activityFilter, setActivityFilter] = useState<ActivityFilter>('all');
   const [composerOpen, setComposerOpen] = useState(false);
+  const [editingMovement, setEditingMovement] = useState<LedgerMovement | null>(null);
 
   const totalExpenses = movements.filter((m) => m.kind === 'expense').reduce((sum, m) => sum + m.amount, 0);
   const recentMovements = movements.slice(0, 4);
   const filteredMovements = activityFilter === 'all' ? movements : movements.filter((m) => m.kind === activityFilter);
 
-  const handleSubmitMovement = (movement: LedgerMovement) => {
-    addMovement(movement);
+  const handleSubmitMovement = async (movement: LedgerMovement) => {
+    if (editingMovement) {
+      await updateMovement(movement);
+      return;
+    }
+
+    await addMovement(movement);
+  };
+
+  const openNewMovement = () => {
+    setEditingMovement(null);
+    setComposerOpen(true);
+  };
+
+  const openEditMovement = async (movement: LedgerMovement) => {
+    const latestMovements = await refreshMovements();
+    const latestMovement = latestMovements.find((item) => item.id === movement.id)
+      ?? latestMovements.find((item) => (
+        item.kind === movement.kind
+        && item.description === movement.description
+        && item.amount === movement.amount
+        && item.paidBy === movement.paidBy
+      ));
+
+    if (!latestMovement) return;
+
+    setEditingMovement(latestMovement);
+    setComposerOpen(true);
   };
 
   if (isLoading) return <AppLoading />;
@@ -58,20 +84,20 @@ export default function Home() {
               <h1 id="inicio-title" className="mt-1 text-3xl font-bold tracking-[-0.045em]">Tu resumen del grupo</h1>
             </div>
 
-            <BalanceCard currentBalance={balances[currentMemberId] ?? 0} totalExpenses={totalExpenses} memberCount={members.length} onViewBalance={() => setActiveTab('balance')} onAddMovement={() => setComposerOpen(true)} />
+            <BalanceCard currentBalance={balances[currentMemberId] ?? 0} totalExpenses={totalExpenses} memberCount={members.length} onViewBalance={() => setActiveTab('balance')} onAddMovement={openNewMovement} />
 
             <section aria-labelledby="recent-title">
               <div className="mb-4 flex items-end justify-between">
                 <h2 id="recent-title" className="text-xl font-bold tracking-[-0.035em]">Movimientos recientes</h2>
                 <button type="button" onClick={() => setActiveTab('actividad')} className="text-sm font-bold text-[#594ff4] active:scale-[0.98]">Ver todos</button>
               </div>
-              <MovementList movements={recentMovements} members={members} currentMemberId={currentMemberId} />
+              <MovementList movements={recentMovements} members={members} currentMemberId={currentMemberId} onEditMovement={openEditMovement} />
             </section>
           </section>
         )}
 
         {activeTab === 'actividad' && (
-          <ActivitySection members={members} movements={filteredMovements} currentMemberId={currentMemberId} activityFilter={activityFilter} onActivityFilterChange={setActivityFilter} />
+          <ActivitySection members={members} movements={filteredMovements} currentMemberId={currentMemberId} activityFilter={activityFilter} onActivityFilterChange={setActivityFilter} onEditMovement={openEditMovement} />
         )}
 
         {activeTab === 'balance' && <BalanceSection members={members} balances={balances} settlements={settlements} />}
@@ -89,7 +115,17 @@ export default function Home() {
 
       <Navigation activeTab={activeTab} onTabChange={setActiveTab} />
 
-      <MovementComposer open={composerOpen} onOpenChange={setComposerOpen} members={members} currentMemberId={currentMemberId} onSubmit={handleSubmitMovement} />
+      <MovementComposer
+        open={composerOpen}
+        onOpenChange={(open) => {
+          setComposerOpen(open);
+          if (!open) setEditingMovement(null);
+        }}
+        members={members}
+        currentMemberId={currentMemberId}
+        editingMovement={editingMovement}
+        onSubmit={handleSubmitMovement}
+      />
     </main>
   );
 }
