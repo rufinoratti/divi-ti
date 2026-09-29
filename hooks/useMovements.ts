@@ -9,6 +9,7 @@ export function useMovements(memberId?: string) {
   const [members, setMembers] = useState<Member[]>([]);
   const [movements, setMovements] = useState<LedgerMovement[]>([]);
   const [groupName, setGroupName] = useState<string>('');
+  const [groupJoinCode, setGroupJoinCode] = useState<string>('');
   const [groupOwnerId, setGroupOwnerId] = useState<string | null>(null);
   const [groupId, setGroupId] = useState<string | null>(null);
   const [isReady, setIsReady] = useState(false);
@@ -19,6 +20,7 @@ export function useMovements(memberId?: string) {
     setMovements([]);
     setGroupId(null);
     setGroupName('');
+    setGroupJoinCode('');
     setGroupOwnerId(null);
 
     async function loadFromApi() {
@@ -30,6 +32,7 @@ export function useMovements(memberId?: string) {
           groups?: Array<{
             id: string;
             nombre: string;
+            codigo_union: string;
             creado_por: string | null;
             miembros?: Array<{ id: string; nombre: string; iniciales: string }>;
           }>;
@@ -39,6 +42,7 @@ export function useMovements(memberId?: string) {
 
         setGroupId(group.id);
         setGroupName(group.nombre || 'Grupo');
+        setGroupJoinCode(group.codigo_union);
         setGroupOwnerId(group.creado_por);
         setMembers((group.miembros ?? []).map((member) => ({
           id: member.id,
@@ -94,5 +98,5 @@ export function useMovements(memberId?: string) {
   const balances = useMemo(() => calculateBalances(members, movements), [movements, members]);
   const settlements = useMemo(() => calculateSettlements(members, balances), [balances]);
 
-  return { movements, isReady, addMovement, balances, settlements, members, groupId, groupName, groupOwnerId };
+  return { movements, isReady, addMovement, balances, settlements, members, groupId, groupName, groupJoinCode, groupOwnerId };
 }

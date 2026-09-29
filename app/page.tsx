@@ -17,15 +17,17 @@ import { type LedgerMovement } from '@/lib/ledger';
 import { GroupOnboarding } from '@/components/features/GroupOnboarding';
 import { GuestOnboarding } from '@/components/features/GuestOnboarding';
 import { InviteMemberForm } from '@/components/features/InviteMemberForm';
+import { EmptyGroupsHome } from '@/components/features/EmptyGroupsHome';
 
 type ActivityFilter = 'all' | LedgerMovement['kind'];
 
 export default function Home() {
-  const { memberId, userId, isAuthenticated, isLoading } = useAuth();
-  const { movements, isReady, addMovement, balances, settlements, members, groupId, groupName, groupOwnerId } = useMovements(memberId ?? undefined);
+  const { memberId, userId, email, isAuthenticated, isLoading } = useAuth();
+  const { movements, isReady, addMovement, balances, settlements, members, groupId, groupName, groupJoinCode, groupOwnerId } = useMovements(memberId ?? undefined);
   const [activeTab, setActiveTab] = useState<Tab>('inicio');
   const [activityFilter, setActivityFilter] = useState<ActivityFilter>('all');
   const [composerOpen, setComposerOpen] = useState(false);
+  const [isCreatingGroup, setIsCreatingGroup] = useState(false);
 
   const totalExpenses = movements.filter((m) => m.kind === 'expense').reduce((sum, m) => sum + m.amount, 0);
   const recentMovements = movements.slice(0, 4);
@@ -41,7 +43,10 @@ export default function Home() {
 
   if (!isReady) return <AppLoading />;
 
-  if (!memberId) return <GroupOnboarding />;
+  if (!memberId) {
+    if (isCreatingGroup) return <GroupOnboarding onCancel={() => setIsCreatingGroup(false)} />;
+    return <EmptyGroupsHome email={email} onCreateGroup={() => setIsCreatingGroup(true)} />;
+  }
 
   const currentMemberId = memberId;
   const currentMember = members.find((m) => m.id === currentMemberId);
@@ -82,6 +87,7 @@ export default function Home() {
             members={members}
             groupName={groupName}
             groupId={groupId}
+            groupJoinCode={groupJoinCode}
             canInvite={userId === groupOwnerId}
           />
         )}
