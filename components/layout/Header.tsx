@@ -1,7 +1,8 @@
 'use client';
 
 import { Avatar } from '@/components/layout/Avatar';
-import { BellIcon, ChevronDownIcon, ChevronRightIcon } from 'lucide-react';
+import { GroupSwitcherSheet } from '@/components/features/GroupSwitcherSheet';
+import { BellIcon } from 'lucide-react';
 import { type Member } from '@/lib/ledger';
 
 interface HeaderProps {
@@ -12,10 +13,9 @@ interface HeaderProps {
   groupName: string;
   onGroupChange: (groupId: string) => void;
   onActivityClick: () => void;
-  onBalanceClick: () => void;
 }
 
-export function Header({ currentMemberId, members, groups, groupId, groupName, onGroupChange, onActivityClick, onBalanceClick }: HeaderProps) {
+export function Header({ currentMemberId, members, groups, groupId, groupName, onGroupChange, onActivityClick }: HeaderProps) {
   const member = members.find((m) => m.id === currentMemberId) ?? members[0];
 
   return (
@@ -23,29 +23,12 @@ export function Header({ currentMemberId, members, groups, groupId, groupName, o
       <div className="flex items-center gap-3">
         <Avatar member={member} />
         <div>
-          <p className="text-sm text-[#5d5d5d]">Grupo activo</p>
-          {groups.length > 1 ? (
-            <div className="relative max-w-56">
-              <select
-                aria-label="Grupo activo"
-                value={groupId}
-                onChange={(event) => onGroupChange(event.target.value)}
-                className="max-w-full appearance-none rounded-md bg-transparent pr-6 text-base font-bold tracking-[-0.02em] outline-none focus-visible:ring-2 focus-visible:ring-[#594ff4]"
-              >
-                {groups.map((group) => <option key={group.id} value={group.id}>{group.name}</option>)}
-              </select>
-              <ChevronDownIcon aria-hidden="true" size={16} className="pointer-events-none absolute right-1 top-1/2 -translate-y-1/2" />
-            </div>
-          ) : (
-            <button
-              type="button"
-              onClick={onBalanceClick}
-              className="flex items-center gap-1 text-left text-base font-bold tracking-[-0.02em] active:scale-[0.98]"
-            >
-              {groupName}
-              <ChevronRightIcon aria-hidden="true" size={16} strokeWidth={1.8} />
-            </button>
-          )}
+          <GroupSwitcherSheet
+            groups={groups}
+            groupId={groupId}
+            groupName={groupName}
+            onGroupChange={onGroupChange}
+          />
         </div>
       </div>
       <button
