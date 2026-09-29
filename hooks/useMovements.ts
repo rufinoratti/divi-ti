@@ -17,6 +17,7 @@ type ApiGroup = {
   id: string;
   nombre: string;
   codigo_union: string;
+  balance_personal: number;
   creado_por: string | null;
   miembros?: GroupMemberRecord[];
 };
@@ -25,6 +26,7 @@ type Group = {
   id: string;
   name: string;
   joinCode: string;
+  personalBalance: number;
   ownerId: string | null;
   members: Member[];
   memberIdsByUserId: Record<string, string>;
@@ -71,6 +73,7 @@ export function useMovements(userId?: string) {
             id: group.id,
             name: group.nombre || 'Grupo',
             joinCode: group.codigo_union,
+            personalBalance: Number(group.balance_personal ?? 0),
             ownerId: group.creado_por,
             members: groupMembers.map((member) => ({
               id: member.id,
@@ -173,6 +176,17 @@ export function useMovements(userId?: string) {
   const groupOwnerId = activeGroup?.ownerId ?? null;
   const isReady = loadedUserId === userId && isGroupsReady && isMovementsReady;
 
+  useEffect(() => {
+    if (!groupId || !currentMemberId || !isMovementsReady) return;
+
+    const personalBalance = calculateBalances(members, movements)[currentMemberId] ?? 0;
+    setGroups((currentGroups) => currentGroups.map((group) => (
+      group.id === groupId && group.personalBalance !== personalBalance
+        ? { ...group, personalBalance }
+        : group
+    )));
+  }, [currentMemberId, groupId, isMovementsReady, members, movements]);
+
   const addMovement = useCallback(async (movement: LedgerMovement) => {
     if (!groupId) throw new Error('No hay un grupo activo para guardar el movimiento.');
     setMovements((current) => [movement, ...current]);
@@ -208,7 +222,12 @@ export function useMovements(userId?: string) {
 
   const balances = useMemo(() => calculateBalances(members, movements), [movements, members]);
   const settlements = useMemo(() => calculateSettlements(members, balances), [balances]);
-  const groupOptions = groups.map(({ id, name }) => ({ id, name }));
+  const groupOptions = groups.map(({ id, name, personalBalance, members }) => ({
+    id,
+    name,
+    balance: personalBalance,
+    memberCount: members.length,
+  }));
 
   return {
     movements,
