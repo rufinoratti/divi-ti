@@ -1,5 +1,7 @@
 const viteEnv = import.meta.env;
-const processEnv = typeof process !== 'undefined' ? process.env : {};
+const processEnv: Record<string, string | undefined> = typeof process !== 'undefined'
+  ? process.env
+  : {};
 
 function readEnv(...names: string[]) {
   for (const name of names) {

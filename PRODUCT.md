@@ -1,122 +1,86 @@
-# Product
+# Divi — producto y alcance del MVP
 
-## Platform
-web (PWA)
+## Propósito
 
-## Users
-Grupos de amigos, parejas, compañeros de departamento y familiares que comparten gastos de manera informal.
+Divi ayuda a amigos, parejas, familias y compañeros de vivienda a ordenar gastos compartidos. Cada persona puede registrar lo que pagó y consultar el saldo del grupo sin llevar cuentas en un chat o una planilla.
 
-## Product Purpose
-Divi es una PWA para registrar gastos compartidos y préstamos puntuales entre personas, calcular un balance neto claro y reducir la incomodidad de reclamar dinero. Proyecto universitario iterativo.
+La idea de innovación del equipo es permitir que alguien suba una foto del ticket, Divi lea sus datos y calcule automáticamente el reparto entre integrantes. Primero se consolida el registro manual de gastos, grupos y balances; el escaneo del ticket corresponde a una iteración posterior.
 
-## Positioning
-Combina en un único balance los gastos grupales y los préstamos 1 a 1, con reglas de división configurables.
+## Usuarios y contexto
 
-## Operating Context
-Se usa desde el teléfono después de salidas, compras grupales, cumpleaños. Flujo: crear grupo → agregar integrantes → cargar gasto/préstamo → entender balance.
+Se usa principalmente desde el teléfono después de una cena, una compra grupal, un viaje o un gasto de la casa.
 
-## Current State (Iteración 1+2 — Implementada)
+Flujo principal: crear o aceptar una invitación a un grupo → registrar un gasto → revisar el balance → saber quién paga a quién.
 
-### Stack técnico
-- Framework: Next.js + React 19 + TypeScript (Vite + Vinext para RSC)
-- Styling: Tailwind CSS v4 con CSS custom properties
-- UI: shadcn/ui (base-nova) + componentes propios
-- Icons: Lucide React
-- **Database: Supabase (PostgreSQL)** — tablas en español
-- Persistencia: Supabase
-- Linting: oxlint + oxfmt
+La interfaz es web adaptable a móviles y cuenta con un manifiesto PWA. El uso sin conexión todavía no está implementado.
 
-### Arquitectura
-```
-app/
-  page.tsx (~350 líneas)
-  layout.tsx - Fonts Geist
-  api/
-    movements/route.ts - GET/POST → Supabase (tabla: movimientos)
-    groups/route.ts - GET grupo → Supabase (tabla: grupos)
-    members/route.ts - GET miembros → Supabase (tabla: miembros)
-components/
-  layout/ (9 archivos): Avatar, MovementIcon, MovementItem, MovementList, Field, ProfileRow, AppLoading, Navigation, Header, BalanceCard
-  features/ (5 archivos): MovementComposer, BalanceSection, ActivitySection, ProfileSection, QuickActions
-hooks/
-  useMovements.ts - Estado global, fetches desde Supabase, balances, settlements, Tab type
-lib/
-  ledger.ts - calculateBalances, calculateSettlements, tipos
-  utils.ts - cn(), formatARS()
-  supabase.ts - Cliente Supabase
-database/
-  schema.sql - Schema completo en español (grupos, miembros, movimientos + RLS)
-```
+## Reglas del producto
 
-### Grupo de demo
-- **Nombre**: configurable por el usuario (default: "Grupo")
-- **Flujo propuesto**: Crear grupo → nombre → integrantes → cargar movimientos
-- **Integrantes default**: Martina (MA), Tomás (TO), Valentina (VA), Nicolás (NI)
-- **Miembro actual**: Martina
+- La moneda de esta versión es el peso argentino (ARS).
+- Un gasto grupal acredita lo que pagó una persona y reparte el costo entre quienes participan.
+- Un gasto se divide en partes iguales entre las personas seleccionadas; al empezar vienen seleccionados todos los integrantes.
+- El reparto asigna los centavos sobrantes de forma determinística para que las partes sumen el total.
+- Un préstamo es entre dos integrantes: quien presta queda a favor y quien recibe queda debiendo.
+- Los balances combinan gastos y préstamos; las propuestas de pago reducen la cantidad de transferencias.
+- Divi calcula deudas, pero no mueve dinero ni confirma que una deuda fue saldada.
 
-### Features implementadas
-- 4 tabs: Inicio, Actividad, Balance, Perfil
-- Registro de gastos grupales (partes iguales) y préstamos 1 a 1
-- Cálculo de balances netos y settlements
-- Persistencia en Supabase
-- Filtro de actividad por tipo
-- Validación de formulario inline
-- Navegación inferior
-- Modal de "Nuevo movimiento"
-- Datos de ejemplo (localStorage fallback)
-- Grupo configurable por usuario
+## Funcionalidad ya implementada
 
-### Base de datos (Supabase - tablas en español)
-- **Tabla `grupos`**: id, nombre, creado_por, creado_en
-- **Tabla `miembros`**: id, nombre, iniciales, grupo_id
-- **Tabla `movimientos`**: id, tipo ('gasto'/'prestamo'), descripcion, monto, pagado_por, receptor, categoria, participantes, creado_en, grupo_id
-- RLS habilitado (lectura/escritura pública para desarrollo)
-- Función `calculate_balances()` en PostgreSQL
+- Registro, inicio y cierre de sesión, recuperación y cambio de contraseña mediante Supabase Auth.
+- Creación de grupos y asociación de la cuenta creadora con su integrante.
+- Invitaciones por email mediante un enlace que la persona invitada acepta al iniciar sesión.
+- Varias vistas de grupo: Inicio, Actividad, Balance y Perfil.
+- Alta manual de gastos grupales con selección de participantes y préstamos 1 a 1.
+- Balance neto por persona, sugerencias para saldar y filtro de actividad.
+- Persistencia en Supabase, con acceso protegido por sesión y políticas RLS.
+- Selector de grupo para cuentas que participan en más de un grupo; conserva la selección en el dispositivo.
+- Creación de grupos adicionales desde el perfil.
 
-### Dev Server
-- `vinext dev` funciona sin Cloudflare plugin
-- TypeScript: ✅ Sin errores
-- Oxlint: ✅ Sin errores en código de aplicación
-- API routes conectan directamente a Supabase
+Todavía no se pueden cargar ítems del ticket, editar movimientos ni registrar una liquidación como pagada.
 
-### Reglas de negocio
-- Gasto grupal: acredita al pagador, debita parte igual a todos
-- Préstamo: acredita al pagador, debita al receptor
-- Suma de balances = 0
-- Validación inline: descripción, importe > 0, receptor ≠ pagador
-- Formatos: ARS, español
+## Iteraciones propuestas por el equipo
 
-## Out of Scope
-- Autenticación de usuarios (usar Supabase Auth)
-- Pagos reales
-- Foto de ticket / OCR
-- Edición/eliminación de movimientos
-- Reglas de división avanzadas
-- Multimoneda / multilingüe
+### Base compartida
 
-## Next Iterations (Prioridad)
-1. **Ejecutar `database/schema.sql` en Supabase** → crear tablas `grupos`, `miembros`, `movimientos`
-2. Configurar `.env.local` con credenciales de Supabase
-3. Probar la app con datos reales
-4. **Crear flujo de "Nuevo Grupo"** → nombre → agregar miembros
-5. Editar/Eliminar movimientos (PUT/DELETE)
-6. Toast notifications
-7. Reglas de división configurables
-8. Autenticación con Supabase Auth
-9. Tests
-10. Deploy
+- Mantener claros los errores de carga y la actualización de balances.
 
-## Setup para desarrollo
-1. Crear proyecto en supabase.com
-2. Copiar `database/schema.sql` al SQL Editor de Supabase
-3. Crear `.env.local` con las credenciales (URL + anon key)
-4. `npm run dev`
-5. App en `http://localhost:5173`
+### Ticket y reparto
 
-## Design System
-- Theme: Claro fijo, porcelana #ffffff, Signal Violet #594ff4
-- Tipografía: Geist (sustituto de Aeonik)
-- Radios: 30px tarjetas, 99px botones píldora
-- Iconografía: Lucide monolineal
-- Motion: MOTION_INTENSITY: 1 (mínimo)
-- Density: VISUAL_DENSITY: 6 (compacta pero legible)
+- Permitir subir o tomar una foto del ticket.
+- Extraer los datos del ticket, empezando por el total y avanzando a sus ítems.
+- Calcular automáticamente el reparto entre integrantes y mostrar cuánto corresponde a cada uno.
+- Permitir corregir los datos leídos y conservar el flujo manual como alternativa.
+
+### Cierre del MVP
+
+- Completar las acciones necesarias para corregir movimientos y registrar pagos de saldos.
+- Preparar datos de demostración, documentación de instalación y una presentación del flujo del producto.
+- Definir y ejecutar la validación funcional antes de entregar.
+
+Estas iteraciones son una propuesta de trabajo del equipo y se pueden ajustar al aprender de las pruebas con usuarios.
+
+## Arquitectura actual
+
+- Next.js con React 19, TypeScript y Vinext sobre Vite.
+- Tailwind CSS v4, shadcn/ui y componentes propios.
+- Supabase Auth y PostgreSQL.
+- Esquema de datos en español: `perfiles`, `grupos`, `miembros`, `movimientos`, `movimiento_participantes` e `invitaciones`.
+- Rutas de servidor para grupos, integrantes, movimientos e invitaciones; validación de requests con Zod.
+- Cálculo de balances y propuestas de pago en `lib/ledger.ts`.
+
+## Desarrollo local
+
+1. Crear un proyecto de Supabase.
+2. Ejecutar `database/schema.sql` en el editor SQL de Supabase.
+3. Ejecutar las migraciones de `supabase/migrations/`.
+4. Configurar `VITE_SUPABASE_URL` y `VITE_SUPABASE_ANON_KEY` en `.env.local`.
+5. Ejecutar `npm install` y `npm run dev`; la configuración local usa `http://localhost:5173`.
+
+La clave configurada debe ser la clave pública de Supabase. No colocar una clave `service_role` en el cliente.
+
+## Sistema visual
+
+- Tema claro, fondo blanco y violeta `#594ff4` como color de acción.
+- Tipografía Geist.
+- Tarjetas con radios amplios y botones principales tipo píldora.
+- Iconografía Lucide; movimiento visual mínimo y foco en uso móvil.

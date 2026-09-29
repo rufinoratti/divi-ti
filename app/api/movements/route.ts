@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 
 import { createMovementSchema, groupIdQuerySchema } from '@/lib/api/schemas';
+import { roundCurrency, splitAmountEqually } from '@/lib/ledger';
 import {
   authErrorResponse,
   configurationErrorResponse,
@@ -30,6 +31,7 @@ type DatabaseMovement = {
 };
 
 function mapMovement(movement: DatabaseMovement) {
+  const participants = movement.movimiento_participantes ?? [];
   return {
     id: movement.id,
     kind: movement.tipo === 'prestamo' ? 'loan' : 'expense',
@@ -38,19 +40,12 @@ function mapMovement(movement: DatabaseMovement) {
     paidBy: movement.pagado_por,
     recipient: movement.receptor ?? undefined,
     category: movement.categoria,
-    participants: (movement.movimiento_participantes ?? []).map((item) => item.miembro_id),
+    participants: participants.map((item) => item.miembro_id),
+    participantShares: Object.fromEntries(
+      participants.map((item) => [item.miembro_id, Number(item.monto_parte)]),
+    ),
     createdAt: movement.creado_en,
   };
-}
-
-function splitAmount(amount: number, participantCount: number) {
-  const cents = Math.round(amount * 100);
-  const baseCents = Math.floor(cents / participantCount);
-  const remainder = cents % participantCount;
-
-  return Array.from({ length: participantCount }, (_, index) => (
-    (baseCents + (index < remainder ? 1 : 0)) / 100
-  ));
 }
 
 export async function GET(request: NextRequest) {
@@ -100,7 +95,7 @@ export async function POST(request: NextRequest) {
       grupo_id: parsed.data.groupId,
       tipo: parsed.data.kind === 'loan' ? 'prestamo' : 'gasto',
       descripcion: parsed.data.description,
-      monto: Math.round(parsed.data.amount * 100) / 100,
+      monto: roundCurrency(parsed.data.amount),
       moneda: 'ARS',
       categoria: parsed.data.kind === 'loan' ? 'Préstamo' : parsed.data.category,
       pagado_por: parsed.data.paidBy,
@@ -115,7 +110,7 @@ export async function POST(request: NextRequest) {
     if (movementError || !movement) return internalErrorResponse();
 
     if (parsed.data.kind === 'expense') {
-      const shares = splitAmount(parsed.data.amount, parsed.data.participants.length);
+      const shares = splitAmountEqually(movementPayload.monto, parsed.data.participants.length);
       const participantRows = parsed.data.participants.map((memberId, index) => ({
         movimiento_id: movement.id,
         grupo_id: parsed.data.groupId,

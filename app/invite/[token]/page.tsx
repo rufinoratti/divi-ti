@@ -5,6 +5,7 @@ import { useParams } from 'next/navigation';
 
 import { AuthLoading } from '@/components/layout/AuthLoading';
 import { useAuth } from '@/hooks/useAuth';
+import { ACTIVE_GROUP_STORAGE_KEY } from '@/lib/group-state';
 
 type InviteStatus = 'waiting' | 'login' | 'accepting' | 'success' | 'error';
 
@@ -34,8 +35,17 @@ export default function InvitePage() {
       body: JSON.stringify({ token }),
     })
       .then(async (response) => {
-        const data = await response.json() as { message?: string; error?: { message?: string } };
+        const data = await response.json() as {
+          message?: string;
+          member?: { grupo_id?: string };
+          error?: { message?: string };
+        };
         if (!response.ok) throw new Error(data.error?.message ?? 'No pudimos aceptar la invitación.');
+        if (data.member?.grupo_id) {
+          try {
+            window.localStorage.setItem(ACTIVE_GROUP_STORAGE_KEY, data.member.grupo_id);
+          } catch {}
+        }
         setMessage(data.message ?? 'Te sumaste al grupo correctamente.');
         setStatus('success');
         window.setTimeout(() => window.location.assign('/'), 700);
