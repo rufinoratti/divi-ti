@@ -1,3 +1,4 @@
+import { randomBytes } from 'node:crypto';
 import { NextRequest, NextResponse } from 'next/server';
 
 import { createGroupSchema } from '@/lib/api/schemas';
@@ -19,7 +20,7 @@ export async function GET(request: NextRequest) {
 
     const { data, error } = await supabase
       .from('grupos')
-      .select('id, nombre, creado_por, creado_en')
+      .select('id, nombre, codigo_union, creado_por, creado_en')
       .order('creado_en', { ascending: false });
     if (error) return internalErrorResponse();
 
@@ -59,12 +60,31 @@ export async function POST(request: NextRequest) {
     const { data: userData, error: userError } = await supabase.auth.getUser();
     if (userError || !userData.user) return authErrorResponse(userError, 401, 'Necesitás iniciar sesión.');
 
-    const { data: group, error: groupError } = await supabase
-      .from('grupos')
-      .insert({ nombre: parsed.data.name, creado_por: userData.user.id })
-      .select('id, nombre, creado_por, creado_en')
-      .single();
-    if (groupError || !group) return internalErrorResponse();
+    let group: {
+      id: string;
+      nombre: string;
+      codigo_union: string;
+      creado_por: string | null;
+      creado_en: string;
+    } | null = null;
+
+    for (let attempt = 0; attempt < 5 && !group; attempt += 1) {
+      const codigoUnion = randomBytes(6).toString('hex').toUpperCase();
+      const { data: createdGroup, error: groupError } = await supabase
+        .from('grupos')
+        .insert({ nombre: parsed.data.name, codigo_union: codigoUnion, creado_por: userData.user.id })
+        .select('id, nombre, codigo_union, creado_por, creado_en')
+        .single();
+
+      if (!groupError && createdGroup) {
+        group = createdGroup;
+        break;
+      }
+
+      if (groupError?.code !== '23505') return internalErrorResponse();
+    }
+
+    if (!group) return internalErrorResponse();
 
     const memberName = parsed.data.memberName ?? userData.user.user_metadata?.display_name ?? userData.user.email?.split('@')[0] ?? 'Yo';
     const initials = memberName

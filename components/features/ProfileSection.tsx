@@ -6,16 +6,18 @@ import { ProfileRow } from '@/components/layout/ProfileRow';
 import { type Member } from '@/lib/ledger';
 import { InviteMemberForm } from '@/components/features/InviteMemberForm';
 import { CreateGroupDialog } from '@/components/features/CreateGroupDialog';
+import { GroupJoinCode } from '@/components/features/GroupJoinCode';
 
 interface ProfileSectionProps {
   currentMemberId: string;
   members: Member[];
   groupName: string;
   groupId: string | null;
+  groupJoinCode: string;
   canInvite: boolean;
 }
 
-export function ProfileSection({ currentMemberId, members, groupName, groupId, canInvite }: ProfileSectionProps) {
+export function ProfileSection({ currentMemberId, members, groupName, groupId, groupJoinCode, canInvite }: ProfileSectionProps) {
   const currentMember = members.find((m) => m.id === currentMemberId) ?? members[0];
 
   return (
@@ -35,6 +37,7 @@ export function ProfileSection({ currentMemberId, members, groupName, groupId, c
           <ProfileRow label="Datos" value="Guardados en este dispositivo" />
         </div>
       </section>
+      {groupJoinCode && <GroupJoinCode code={groupJoinCode} groupName={groupName || 'tu grupo'} />}
       {canInvite && groupId && <InviteMemberForm groupId={groupId} />}
 
       <section className="mt-7 rounded-[30px] border border-[#e7e7e7] p-6">

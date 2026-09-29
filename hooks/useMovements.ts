@@ -16,6 +16,7 @@ type GroupMemberRecord = {
 type ApiGroup = {
   id: string;
   nombre: string;
+  codigo_union: string;
   creado_por: string | null;
   miembros?: GroupMemberRecord[];
 };
@@ -23,6 +24,7 @@ type ApiGroup = {
 type Group = {
   id: string;
   name: string;
+  joinCode: string;
   ownerId: string | null;
   members: Member[];
   memberIdsByUserId: Record<string, string>;
@@ -68,6 +70,7 @@ export function useMovements(userId?: string) {
           return {
             id: group.id,
             name: group.nombre || 'Grupo',
+            joinCode: group.codigo_union,
             ownerId: group.creado_por,
             members: groupMembers.map((member) => ({
               id: member.id,
@@ -166,6 +169,7 @@ export function useMovements(userId?: string) {
   const members = activeGroup?.members ?? [];
   const currentMemberId = userId ? activeGroup?.memberIdsByUserId[userId] ?? null : null;
   const groupName = activeGroup?.name ?? '';
+  const groupJoinCode = activeGroup?.joinCode ?? '';
   const groupOwnerId = activeGroup?.ownerId ?? null;
   const isReady = loadedUserId === userId && isGroupsReady && isMovementsReady;
 
@@ -218,6 +222,7 @@ export function useMovements(userId?: string) {
     groups: groupOptions,
     groupId,
     groupName,
+    groupJoinCode,
     groupOwnerId,
     selectGroup,
   };

@@ -16,6 +16,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { type LedgerMovement } from '@/lib/ledger';
 import { GroupOnboarding } from '@/components/features/GroupOnboarding';
 import { GuestOnboarding } from '@/components/features/GuestOnboarding';
+import { EmptyGroupsHome } from '@/components/features/EmptyGroupsHome';
 
 type ActivityFilter = 'all' | LedgerMovement['kind'];
 
@@ -38,7 +39,7 @@ function DataError({ message }: { message: string }) {
 }
 
 export default function Home() {
-  const { userId, isAuthenticated, isLoading } = useAuth();
+  const { userId, email, isAuthenticated, isLoading } = useAuth();
   const {
     movements,
     isReady,
@@ -51,12 +52,14 @@ export default function Home() {
     groups,
     groupId,
     groupName,
+    groupJoinCode,
     groupOwnerId,
     selectGroup,
   } = useMovements(userId ?? undefined);
   const [activeTab, setActiveTab] = useState<Tab>('inicio');
   const [activityFilter, setActivityFilter] = useState<ActivityFilter>('all');
   const [composerOpen, setComposerOpen] = useState(false);
+  const [isCreatingGroup, setIsCreatingGroup] = useState(false);
 
   const totalExpenses = movements.filter((m) => m.kind === 'expense').reduce((sum, m) => sum + m.amount, 0);
   const recentMovements = movements.slice(0, 4);
@@ -79,7 +82,10 @@ export default function Home() {
 
   if (loadError) return <DataError message={loadError} />;
 
-  if (!groupId) return <GroupOnboarding />;
+  if (!groupId) {
+    if (isCreatingGroup) return <GroupOnboarding onCancel={() => setIsCreatingGroup(false)} />;
+    return <EmptyGroupsHome email={email} onCreateGroup={() => setIsCreatingGroup(true)} />;
+  }
 
   if (!currentMemberId) {
     return <DataError message="Tu cuenta no aparece vinculada a un integrante de este grupo. Volvé a cargar la app; si el problema continúa, pedile al administrador que revise la invitación." />;
@@ -132,6 +138,7 @@ export default function Home() {
             members={members}
             groupName={groupName}
             groupId={groupId}
+            groupJoinCode={groupJoinCode}
             canInvite={userId === groupOwnerId}
           />
         )}

@@ -1,12 +1,18 @@
 'use client';
 
 import { useState, type FormEvent } from 'react';
+import { GroupJoinCode } from '@/components/features/GroupJoinCode';
 
-export function GroupOnboarding() {
+interface GroupOnboardingProps {
+  onCancel?: () => void;
+}
+
+export function GroupOnboarding({ onCancel }: GroupOnboardingProps) {
   const [name, setName] = useState('');
   const [memberName, setMemberName] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState('');
+  const [createdGroup, setCreatedGroup] = useState<{ name: string; code: string } | null>(null);
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -19,15 +25,18 @@ export function GroupOnboarding() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ name, memberName: memberName || undefined }),
       });
-      const data = await response.json() as { error?: { message?: string } | string };
+      const data = await response.json() as {
+        group?: { nombre?: string; codigo_union?: string };
+        error?: { message?: string } | string;
+      };
 
-      if (!response.ok) {
+      if (!response.ok || !data.group?.codigo_union) {
         const message = typeof data.error === 'string' ? data.error : data.error?.message;
-        setError(message ?? 'No pudimos crear el grupo.');
+        setError(message ?? 'No pudimos crear el grupo y generar su código para unirse.');
         return;
       }
 
-      window.location.assign('/');
+      setCreatedGroup({ name: data.group.nombre ?? name, code: data.group.codigo_union });
     } catch {
       setError('No pudimos conectarnos con el servicio. Probá de nuevo.');
     } finally {
@@ -35,9 +44,40 @@ export function GroupOnboarding() {
     }
   }
 
+  if (createdGroup) {
+    return (
+      <main className="min-h-[100dvh] bg-white px-5 py-12 text-[#1f1f1f] sm:px-7">
+        <div className="mx-auto max-w-[500px]">
+          <p className="text-sm font-bold uppercase tracking-[0.18em] text-[#594ff4]">Grupo creado</p>
+          <h1 className="mt-3 text-3xl font-bold tracking-[-0.045em]">Ya pueden sumarse a {createdGroup.name}</h1>
+          <p className="mt-2 text-[#5d5d5d]">Compartí este código con tus compañeros.</p>
+
+          <GroupJoinCode code={createdGroup.code} groupName={createdGroup.name} />
+
+          <button
+            type="button"
+            onClick={() => window.location.assign('/')}
+            className="mt-6 flex min-h-13 w-full items-center justify-center rounded-full bg-[#594ff4] px-5 text-sm font-bold text-white transition active:scale-[0.98]"
+          >
+            Ir al grupo
+          </button>
+        </div>
+      </main>
+    );
+  }
+
   return (
     <main className="min-h-[100dvh] bg-white text-[#1f1f1f]">
       <div className="mx-auto max-w-[500px] px-5 py-12 sm:px-7">
+        {onCancel && (
+          <button
+            type="button"
+            onClick={onCancel}
+            className="min-h-11 rounded-full px-3 text-sm font-semibold text-[#5d5d5d] transition hover:bg-[#f6f6f6]"
+          >
+            Volver al inicio
+          </button>
+        )}
         <div className="mt-8 space-y-7">
           <div className="text-center">
             <p className="text-sm font-bold uppercase tracking-[0.18em] text-[#594ff4]">Primer paso</p>

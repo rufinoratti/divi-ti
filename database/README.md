@@ -18,6 +18,8 @@ También podés copiar `.env.example` como base.
 2. Copia y pega todo el contenido de `database/schema.sql`
 3. Haz clic en **Run**
 
+Si el proyecto de Supabase ya tenía el schema anterior, ejecutá también `supabase/migrations/20260929224821_add_group_join_codes.sql` en el SQL Editor para agregar los códigos reutilizables de grupo.
+
 ## Paso 4: Configurar Auth
 1. En Supabase abrí **Authentication → Providers → Email**.
 2. Activá Email/Password.

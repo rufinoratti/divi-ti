@@ -21,6 +21,16 @@ export const createGroupSchema = z.object({
     .optional(),
 });
 
+export const groupJoinCodeSchema = z.object({
+  code: z
+    .string({ message: 'Pegá el código del grupo.' })
+    .trim()
+    .min(1, 'Pegá el código del grupo.')
+    .max(32, 'El código del grupo no es válido.')
+    .transform((value) => value.toUpperCase().replace(/[\s-]/g, ''))
+    .refine((value) => /^[A-F0-9]{12}$/.test(value), 'El código del grupo debe tener 12 caracteres.'),
+});
+
 export const createMemberSchema = z.object({
   groupId: uuid,
   name: z
