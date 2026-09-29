@@ -104,7 +104,6 @@ export default function Home() {
           groupName={groupName}
           onGroupChange={handleGroupChange}
           onActivityClick={() => setActiveTab('actividad')}
-          onBalanceClick={() => setActiveTab('balance')}
         />
 
         {activeTab === 'inicio' && (

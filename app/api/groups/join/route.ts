@@ -44,12 +44,10 @@ export async function POST(request: NextRequest) {
       group?: { nombre?: string };
     } | null;
     const groupName = membership?.group?.nombre;
-    const message = membership?.alreadyMember
-      ? `Ya pertenecés al grupo ${groupName ?? 'indicado'}.`
-      : `Te sumaste al grupo ${groupName ?? 'correctamente'}.`;
+    const message = `Ya tenés acceso al grupo ${groupName ?? 'indicado'}.`;
     const response = NextResponse.json(
       { membership: data, message },
-      { status: membership?.alreadyMember ? 200 : 201 },
+      { status: 200 },
     );
     response.headers.set('Cache-Control', 'private, no-store');
     applyCookies(response);
