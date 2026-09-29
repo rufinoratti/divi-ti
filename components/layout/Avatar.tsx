@@ -13,7 +13,7 @@ export function Avatar({ member, size = 'regular' }: AvatarProps) {
   return (
     <span
       aria-label={member.name}
-      className={`grid ${dimensions} shrink-0 place-items-center rounded-full bg-[#1f1f1f] font-semibold tracking-[0.08em] text-white`}
+      className={`grid ${dimensions} shrink-0 place-items-center rounded-full bg-[#594ff4] font-semibold tracking-[0.08em] text-white`}
     >
       {member.initials}
     </span>
