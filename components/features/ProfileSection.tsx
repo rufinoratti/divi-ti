@@ -5,6 +5,7 @@ import { Avatar } from '@/components/layout/Avatar';
 import { ProfileRow } from '@/components/layout/ProfileRow';
 import { type Member } from '@/lib/ledger';
 import { InviteMemberForm } from '@/components/features/InviteMemberForm';
+import { CreateGroupDialog } from '@/components/features/CreateGroupDialog';
 
 interface ProfileSectionProps {
   currentMemberId: string;
@@ -43,6 +44,7 @@ export function ProfileSection({ currentMemberId, members, groupName, groupId, c
           Tus grupos, integrantes y movimientos quedan vinculados a tu cuenta para que puedas retomarlos cuando quieras.
         </p>
       </section>
+      <CreateGroupDialog />
     </section>
   );
 }

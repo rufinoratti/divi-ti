@@ -3,13 +3,10 @@
 import { useState, useCallback, useEffect } from 'react';
 import { getSupabaseBrowserClient } from '@/lib/supabase/client';
 import { type AuthSessionPayload } from '@/lib/auth/types';
-import { type Member } from '@/lib/ledger';
 
 interface AuthState {
   userId: string | null;
   email: string | null;
-  memberId: string | null;
-  members: Member[];
   isAuthenticated: boolean;
   isLoading: boolean;
 }
@@ -18,8 +15,6 @@ export function useAuth() {
   const [state, setState] = useState<AuthState>({
     userId: null,
     email: null,
-    memberId: null,
-    members: [],
     isAuthenticated: false,
     isLoading: true,
   });
@@ -38,8 +33,6 @@ export function useAuth() {
         setState({
           userId: null,
           email: null,
-          memberId: null,
-          members: [],
           isAuthenticated: false,
           isLoading: false,
         });
@@ -48,17 +41,7 @@ export function useAuth() {
 
       const userId = data.user.id;
       const email = data.user.email ?? null;
-      const { data: members } = await supabase
-        .from('miembros')
-        .select('id, nombre, iniciales')
-        .eq('usuario_id', userId);
-      const memberList = (members ?? []).map((member) => ({
-        id: member.id,
-        name: member.nombre,
-        initials: member.iniciales,
-      })) as Member[];
-      const memberId = memberList.length > 0 ? memberList[0].id : null;
-      setState({ userId, email, memberId, members: memberList, isAuthenticated: true, isLoading: false });
+      setState({ userId, email, isAuthenticated: true, isLoading: false });
     } catch {
       setState((prev) => ({ ...prev, isLoading: false }));
     }
@@ -93,7 +76,7 @@ export function useAuth() {
       if (supabase) await supabase.auth.signOut();
     } catch {}
 
-    setState({ userId: null, email: null, memberId: null, members: [], isAuthenticated: false, isLoading: false });
+    setState({ userId: null, email: null, isAuthenticated: false, isLoading: false });
   }, []);
 
   useEffect(() => {
@@ -103,7 +86,7 @@ export function useAuth() {
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
       if (event === 'SIGNED_OUT') {
-        setState({ userId: null, email: null, memberId: null, members: [], isAuthenticated: false, isLoading: false });
+        setState({ userId: null, email: null, isAuthenticated: false, isLoading: false });
       }
       if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
         setTimeout(() => { void setAuthState(); }, 0);

@@ -4,6 +4,7 @@ import {
   Building2Icon,
   CarFrontIcon,
   HandCoinsIcon,
+  ReceiptTextIcon,
   ShoppingBagIcon,
   UtensilsIcon,
 } from 'lucide-react';
@@ -18,6 +19,7 @@ const categoryToIcon: Record<MovementCategory, React.ElementType> = {
   Comida: UtensilsIcon,
   Transporte: CarFrontIcon,
   Compras: ShoppingBagIcon,
+  Otros: ReceiptTextIcon,
   Préstamo: HandCoinsIcon,
 };
 

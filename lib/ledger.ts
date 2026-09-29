@@ -11,6 +11,7 @@ export type MovementCategory =
   | 'Comida'
   | 'Transporte'
   | 'Compras'
+  | 'Otros'
   | 'Préstamo';
 
 export type LedgerMovement = {
@@ -22,6 +23,7 @@ export type LedgerMovement = {
   recipient?: string;
   category: MovementCategory;
   participants: string[];
+  participantShares?: Record<string, number>;
   createdAt: string;
 };
 
@@ -31,7 +33,26 @@ export type Settlement = {
   amount: number;
 };
 
-const roundCurrency = (value: number) => Math.round(value * 100) / 100;
+export function toCurrencyCents(value: number) {
+  return Math.round((value + Number.EPSILON) * 100);
+}
+
+export function roundCurrency(value: number) {
+  return toCurrencyCents(value) / 100;
+}
+
+export function splitAmountEqually(amount: number, participantCount: number) {
+  if (!Number.isFinite(amount) || participantCount <= 0) return [];
+
+  const totalCents = Math.abs(toCurrencyCents(amount));
+  const baseCents = Math.floor(totalCents / participantCount);
+  const remainder = totalCents % participantCount;
+  const sign = Math.sign(amount);
+
+  return Array.from({ length: participantCount }, (_, index) => (
+    sign * (baseCents + (index < remainder ? 1 : 0)) / 100
+  ));
+}
 
 export function calculateBalances(
   members: Member[],
@@ -43,19 +64,24 @@ export function calculateBalances(
 
   for (const movement of movements) {
     if (movement.kind === 'loan' && movement.recipient) {
-      balances[movement.paidBy] += movement.amount;
-      balances[movement.recipient] -= movement.amount;
+      const amount = roundCurrency(movement.amount);
+      balances[movement.paidBy] += amount;
+      balances[movement.recipient] -= amount;
       continue;
     }
 
     const participants = movement.participants.length
       ? movement.participants
       : members.map((member) => member.id);
-    const share = movement.amount / participants.length;
+    const amount = roundCurrency(movement.amount);
+    const storedShares = movement.participantShares;
+    const shares = storedShares && Object.keys(storedShares).length > 0
+      ? participants.map((participant) => roundCurrency(storedShares[participant] ?? 0))
+      : splitAmountEqually(amount, participants.length);
 
-    balances[movement.paidBy] += movement.amount;
-    for (const participant of participants) {
-      balances[participant] -= share;
+    balances[movement.paidBy] += amount;
+    for (const [index, participant] of participants.entries()) {
+      balances[participant] -= shares[index] ?? 0;
     }
   }
 
