@@ -16,14 +16,46 @@ import { useAuth } from '@/hooks/useAuth';
 import { type LedgerMovement } from '@/lib/ledger';
 import { GroupOnboarding } from '@/components/features/GroupOnboarding';
 import { GuestOnboarding } from '@/components/features/GuestOnboarding';
-import { InviteMemberForm } from '@/components/features/InviteMemberForm';
 import { EmptyGroupsHome } from '@/components/features/EmptyGroupsHome';
 
 type ActivityFilter = 'all' | LedgerMovement['kind'];
 
+function DataError({ message }: { message: string }) {
+  return (
+    <main className="grid min-h-[100dvh] place-items-center bg-white px-6 text-[#1f1f1f]">
+      <section className="max-w-sm text-center" role="alert">
+        <h1 className="text-2xl font-bold tracking-[-0.04em]">No pudimos abrir tu grupo</h1>
+        <p className="mt-3 text-sm leading-6 text-[#5d5d5d]">{message}</p>
+        <button
+          type="button"
+          onClick={() => window.location.reload()}
+          className="mt-6 min-h-12 rounded-full bg-[#594ff4] px-6 text-sm font-bold text-white"
+        >
+          Volver a intentar
+        </button>
+      </section>
+    </main>
+  );
+}
+
 export default function Home() {
-  const { memberId, userId, email, isAuthenticated, isLoading } = useAuth();
-  const { movements, isReady, addMovement, balances, settlements, members, groupId, groupName, groupJoinCode, groupOwnerId } = useMovements(memberId ?? undefined);
+  const { userId, email, isAuthenticated, isLoading } = useAuth();
+  const {
+    movements,
+    isReady,
+    loadError,
+    addMovement,
+    balances,
+    settlements,
+    members,
+    currentMemberId,
+    groups,
+    groupId,
+    groupName,
+    groupJoinCode,
+    groupOwnerId,
+    selectGroup,
+  } = useMovements(userId ?? undefined);
   const [activeTab, setActiveTab] = useState<Tab>('inicio');
   const [activityFilter, setActivityFilter] = useState<ActivityFilter>('all');
   const [composerOpen, setComposerOpen] = useState(false);
@@ -33,8 +65,13 @@ export default function Home() {
   const recentMovements = movements.slice(0, 4);
   const filteredMovements = activityFilter === 'all' ? movements : movements.filter((m) => m.kind === activityFilter);
 
-  const handleSubmitMovement = (movement: LedgerMovement) => {
-    addMovement(movement);
+  const handleSubmitMovement = (movement: LedgerMovement) => addMovement(movement);
+
+  const handleGroupChange = (nextGroupId: string) => {
+    selectGroup(nextGroupId);
+    setActiveTab('inicio');
+    setActivityFilter('all');
+    setComposerOpen(false);
   };
 
   if (isLoading) return <AppLoading />;
@@ -43,18 +80,32 @@ export default function Home() {
 
   if (!isReady) return <AppLoading />;
 
-  if (!memberId) {
+  if (loadError) return <DataError message={loadError} />;
+
+  if (!groupId) {
     if (isCreatingGroup) return <GroupOnboarding onCancel={() => setIsCreatingGroup(false)} />;
     return <EmptyGroupsHome email={email} onCreateGroup={() => setIsCreatingGroup(true)} />;
   }
 
-  const currentMemberId = memberId;
+  if (!currentMemberId) {
+    return <DataError message="Tu cuenta no aparece vinculada a un integrante de este grupo. Volvé a cargar la app; si el problema continúa, pedile al administrador que revise la invitación." />;
+  }
+
   const currentMember = members.find((m) => m.id === currentMemberId);
 
   return (
     <main className="min-h-[100dvh] bg-white text-[#1f1f1f]">
       <div className="mx-auto min-h-[100dvh] max-w-[500px] px-5 pb-28 pt-6 sm:px-7">
-        <Header currentMemberId={currentMemberId} members={members} groupName={groupName} onActivityClick={() => setActiveTab('actividad')} onBalanceClick={() => setActiveTab('balance')} />
+        <Header
+          currentMemberId={currentMemberId}
+          members={members}
+          groups={groups}
+          groupId={groupId}
+          groupName={groupName}
+          onGroupChange={handleGroupChange}
+          onActivityClick={() => setActiveTab('actividad')}
+          onBalanceClick={() => setActiveTab('balance')}
+        />
 
         {activeTab === 'inicio' && (
           <section className="mt-8 space-y-7" aria-labelledby="inicio-title">
@@ -95,7 +146,7 @@ export default function Home() {
 
       <Navigation activeTab={activeTab} onTabChange={setActiveTab} />
 
-      <MovementComposer open={composerOpen} onOpenChange={setComposerOpen} members={members} currentMemberId={currentMemberId} onSubmit={handleSubmitMovement} />
+      <MovementComposer key={groupId} open={composerOpen} onOpenChange={setComposerOpen} members={members} currentMemberId={currentMemberId} onSubmit={handleSubmitMovement} />
     </main>
   );
 }

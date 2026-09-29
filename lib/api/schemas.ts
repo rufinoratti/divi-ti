@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { toCurrencyCents } from '@/lib/ledger';
 
 const uuid = z.string().uuid('El identificador no es válido.');
 
@@ -96,6 +97,15 @@ export const createMovementSchema = z
       .refine((values) => new Set(values).size === values.length, 'No repitas participantes.'),
   })
   .superRefine((values, context) => {
+    const amountCents = toCurrencyCents(values.amount);
+    if (amountCents < 1) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['amount'],
+        message: 'El importe mínimo es $0,01.',
+      });
+    }
+
     if (values.kind === 'loan') {
       if (!values.recipient) {
         context.addIssue({
@@ -142,6 +152,14 @@ export const createMovementSchema = z
           code: z.ZodIssueCode.custom,
           path: ['participants'],
           message: 'Elegí al menos un participante.',
+        });
+      }
+
+      if (amountCents < values.participants.length) {
+        context.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ['amount'],
+          message: 'El importe debe alcanzar para asignar al menos un centavo a cada participante.',
         });
       }
 
