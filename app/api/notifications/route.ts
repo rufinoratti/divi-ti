@@ -13,6 +13,7 @@ import { createSupabaseRouteClient } from '@/lib/supabase/server';
 type PaymentRow = {
   id: string;
   grupo_id: string;
+  movimiento_id: string | null;
   pagador_id: string;
   receptor_id: string;
   monto: number;
@@ -44,26 +45,31 @@ export async function GET(request: NextRequest) {
     const paymentResult = paymentIds.length
       ? await supabase
           .from('liquidaciones')
-          .select('id, grupo_id, pagador_id, receptor_id, monto, estado')
+          .select('id, grupo_id, movimiento_id, pagador_id, receptor_id, monto, estado')
           .in('id', paymentIds)
       : { data: [], error: null };
     if (paymentResult.error) return internalErrorResponse();
 
     const payments = (paymentResult.data ?? []) as PaymentRow[];
     const groupIds = [...new Set(payments.map((payment) => payment.grupo_id))];
+    const movementIds = [...new Set(payments.map((payment) => payment.movimiento_id).filter((id): id is string => Boolean(id)))];
     const memberIds = [...new Set(payments.flatMap((payment) => [payment.pagador_id, payment.receptor_id]))];
-    const [groupsResult, membersResult] = await Promise.all([
+    const [groupsResult, movementsResult, membersResult] = await Promise.all([
       groupIds.length
         ? supabase.from('grupos').select('id, nombre').in('id', groupIds)
+        : Promise.resolve({ data: [], error: null }),
+      movementIds.length
+        ? supabase.from('movimientos').select('id, descripcion').in('id', movementIds)
         : Promise.resolve({ data: [], error: null }),
       memberIds.length
         ? supabase.from('miembros').select('id, nombre').in('id', memberIds)
         : Promise.resolve({ data: [], error: null }),
     ]);
-    if (groupsResult.error || membersResult.error) return internalErrorResponse();
+    if (groupsResult.error || movementsResult.error || membersResult.error) return internalErrorResponse();
 
     const paymentById = new Map(payments.map((payment) => [payment.id, payment]));
     const groupNameById = new Map((groupsResult.data ?? []).map((group) => [group.id, group.nombre]));
+    const movementDescriptionById = new Map((movementsResult.data ?? []).map((movement) => [movement.id, movement.descripcion]));
     const memberNameById = new Map((membersResult.data ?? []).map((member) => [member.id, member.nombre]));
     const enrichedNotifications = (notifications ?? []).flatMap((notification) => {
       const payment = paymentById.get(notification.liquidacion_id);
@@ -77,6 +83,8 @@ export async function GET(request: NextRequest) {
           id: payment.id,
           groupId: payment.grupo_id,
           groupName: groupNameById.get(payment.grupo_id) ?? 'Grupo',
+          movementId: payment.movimiento_id,
+          movementDescription: payment.movimiento_id ? movementDescriptionById.get(payment.movimiento_id) ?? null : null,
           fromMemberId: payment.pagador_id,
           fromMemberName: memberNameById.get(payment.pagador_id) ?? 'Integrante',
           toMemberId: payment.receptor_id,

@@ -30,17 +30,12 @@ export type LedgerMovement = {
   groupName?: string;
 };
 
-export type Settlement = {
-  from: string;
-  to: string;
-  amount: number;
-};
-
 export type SettlementPaymentStatus = 'pendiente' | 'confirmada' | 'rechazada';
 
 export type SettlementPayment = {
   id: string;
   groupId: string;
+  movementId: string | null;
   from: string;
   to: string;
   amount: number;
@@ -60,6 +55,8 @@ export type PaymentNotification = {
     id: string;
     groupId: string;
     groupName: string;
+    movementId: string | null;
+    movementDescription: string | null;
     fromMemberId: string;
     fromMemberName: string;
     toMemberId: string;
@@ -69,6 +66,20 @@ export type PaymentNotification = {
   };
 };
 
+export type MovementObligation = {
+  id: string;
+  movementId: string;
+  description: string;
+  createdAt: string;
+  from: string;
+  to: string;
+  amount: number;
+  confirmedAmount: number;
+  pendingAmount: number;
+  remainingAmount: number;
+  availableAmount: number;
+};
+
 export type GroupLedger = {
   id: string;
   name: string;
@@ -76,8 +87,7 @@ export type GroupLedger = {
   currentMemberId: string | null;
   movements: LedgerMovement[];
   payments: SettlementPayment[];
-  balances: Record<string, number>;
-  settlements: Settlement[];
+  obligations: MovementObligation[];
 };
 
 export function toCurrencyCents(value: number) {
@@ -101,84 +111,75 @@ export function splitAmountEqually(amount: number, participantCount: number) {
   ));
 }
 
-export function calculateBalances(
+export function calculateMovementObligations(
   members: Member[],
   movements: LedgerMovement[],
   payments: SettlementPayment[] = [],
-) {
-  const balances = Object.fromEntries(
-    members.map((member) => [member.id, 0]),
-  ) as Record<string, number>;
-
-  for (const movement of movements) {
-    if (movement.kind === 'loan' && movement.recipient) {
-      const amount = roundCurrency(movement.amount);
-      balances[movement.paidBy] += amount;
-      balances[movement.recipient] -= amount;
-      continue;
-    }
-
-    const participants = movement.participants.length
-      ? movement.participants
-      : members.map((member) => member.id);
-    const amount = roundCurrency(movement.amount);
-    const storedShares = movement.participantShares;
-    const shares = storedShares && Object.keys(storedShares).length > 0
-      ? participants.map((participant) => roundCurrency(storedShares[participant] ?? 0))
-      : splitAmountEqually(amount, participants.length);
-
-    balances[movement.paidBy] += amount;
-    for (const [index, participant] of participants.entries()) {
-      balances[participant] -= shares[index] ?? 0;
-    }
-  }
-
+): MovementObligation[] {
+  const paymentTotals = new Map<string, { confirmedCents: number; pendingCents: number }>();
   for (const payment of payments) {
-    if (payment.status !== 'confirmada') continue;
-    if (!(payment.from in balances) || !(payment.to in balances)) continue;
-
-    const amount = roundCurrency(payment.amount);
-    balances[payment.from] += amount;
-    balances[payment.to] -= amount;
+    if (!payment.movementId || payment.status === 'rechazada') continue;
+    const key = `${payment.movementId}:${payment.from}:${payment.to}`;
+    const totals = paymentTotals.get(key) ?? { confirmedCents: 0, pendingCents: 0 };
+    if (payment.status === 'confirmada') totals.confirmedCents += toCurrencyCents(payment.amount);
+    if (payment.status === 'pendiente') totals.pendingCents += toCurrencyCents(payment.amount);
+    paymentTotals.set(key, totals);
   }
 
-  return Object.fromEntries(
-    Object.entries(balances).map(([memberId, balance]) => [
-      memberId,
-      roundCurrency(balance),
-    ]),
-  ) as Record<string, number>;
+  const obligations: MovementObligation[] = [];
+  for (const movement of movements) {
+    const baseDebts: Array<{ from: string; to: string; amount: number }> = [];
+    if (movement.kind === 'loan' && movement.recipient) {
+      baseDebts.push({ from: movement.recipient, to: movement.paidBy, amount: roundCurrency(movement.amount) });
+    } else {
+      const participants = movement.participants.length ? movement.participants : members.map((member) => member.id);
+      const storedShares = movement.participantShares;
+      const equalShares = splitAmountEqually(movement.amount, participants.length);
+      const shares = storedShares && Object.keys(storedShares).length > 0
+        ? Object.fromEntries(participants.map((participant) => [participant, roundCurrency(storedShares[participant] ?? 0)]))
+        : Object.fromEntries(participants.map((participant, index) => [participant, equalShares[index] ?? 0]));
+
+      for (const participantId of participants) {
+        const share = shares[participantId] ?? 0;
+        if (participantId !== movement.paidBy && share > 0) {
+          baseDebts.push({ from: participantId, to: movement.paidBy, amount: share });
+        }
+      }
+    }
+
+    for (const debt of baseDebts) {
+      const id = `${movement.id}:${debt.from}:${debt.to}`;
+      const totals = paymentTotals.get(id) ?? { confirmedCents: 0, pendingCents: 0 };
+      const amountCents = toCurrencyCents(debt.amount);
+      const remainingCents = Math.max(0, amountCents - totals.confirmedCents);
+      const availableCents = Math.max(0, remainingCents - totals.pendingCents);
+      obligations.push({
+        id,
+        movementId: movement.id,
+        description: movement.description,
+        createdAt: movement.createdAt,
+        from: debt.from,
+        to: debt.to,
+        amount: debt.amount,
+        confirmedAmount: totals.confirmedCents / 100,
+        pendingAmount: Math.min(remainingCents, totals.pendingCents) / 100,
+        remainingAmount: remainingCents / 100,
+        availableAmount: availableCents / 100,
+      });
+    }
+  }
+
+  return obligations;
 }
 
-export function calculateSettlements(
-  members: Member[],
-  balances: Record<string, number>,
-): Settlement[] {
-  const creditors = members
-    .map((member) => ({ id: member.id, amount: balances[member.id] }))
-    .filter((entry) => entry.amount > 0.01)
-    .sort((a, b) => b.amount - a.amount);
-  const debtors = members
-    .map((member) => ({ id: member.id, amount: Math.abs(balances[member.id]) }))
-    .filter((entry) => entry.amount > 0.01)
-    .sort((a, b) => b.amount - a.amount);
-  const settlements: Settlement[] = [];
-
-  let creditorIndex = 0;
-  let debtorIndex = 0;
-
-  while (creditorIndex < creditors.length && debtorIndex < debtors.length) {
-    const creditor = creditors[creditorIndex];
-    const debtor = debtors[debtorIndex];
-    const amount = roundCurrency(Math.min(creditor.amount, debtor.amount));
-
-    settlements.push({ from: debtor.id, to: creditor.id, amount });
-    creditor.amount = roundCurrency(creditor.amount - amount);
-    debtor.amount = roundCurrency(debtor.amount - amount);
-
-    if (creditor.amount <= 0.01) creditorIndex += 1;
-    if (debtor.amount <= 0.01) debtorIndex += 1;
-  }
-
-  return settlements;
+export function summarizeMemberObligations(members: Member[], obligations: MovementObligation[]) {
+  return Object.fromEntries(members.map((member) => {
+    const owes = obligations
+      .filter((obligation) => obligation.from === member.id)
+      .reduce((sum, obligation) => sum + obligation.remainingAmount, 0);
+    const owed = obligations
+      .filter((obligation) => obligation.to === member.id)
+      .reduce((sum, obligation) => sum + obligation.remainingAmount, 0);
+    return [member.id, { owes: roundCurrency(owes), owed: roundCurrency(owed) }];
+  })) as Record<string, { owes: number; owed: number }>;
 }

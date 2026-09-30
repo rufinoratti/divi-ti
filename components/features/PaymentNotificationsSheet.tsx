@@ -21,19 +21,20 @@ interface PaymentNotificationsSheetProps {
 
 function notificationMessage(notification: PaymentNotification) {
   const { payment } = notification;
+  const movementContext = payment.movementDescription ? ` por ${payment.movementDescription}` : '';
   if (notification.type === 'pago_informado' && payment.status === 'confirmada') {
-    return `Confirmaste que ${payment.fromMemberName} te pagó ${formatARS(payment.amount)}.`;
+    return `Confirmaste que ${payment.fromMemberName} te pagó ${formatARS(payment.amount)}${movementContext}.`;
   }
   if (notification.type === 'pago_informado' && payment.status === 'rechazada') {
-    return `Marcaste que no recibiste el pago de ${payment.fromMemberName} (${formatARS(payment.amount)}).`;
+    return `Marcaste que no recibiste el pago de ${payment.fromMemberName} (${formatARS(payment.amount)})${movementContext}.`;
   }
   if (notification.type === 'pago_confirmado') {
-    return `${payment.toMemberName} confirmó que recibió ${formatARS(payment.amount)}.`;
+    return `${payment.toMemberName} confirmó que recibió ${formatARS(payment.amount)}${movementContext}.`;
   }
   if (notification.type === 'pago_rechazado') {
-    return `${payment.toMemberName} no confirmó la recepción de ${formatARS(payment.amount)}.`;
+    return `${payment.toMemberName} no confirmó la recepción de ${formatARS(payment.amount)}${movementContext}.`;
   }
-  return `${payment.fromMemberName} dice que te pagó ${formatARS(payment.amount)}.`;
+  return `${payment.fromMemberName} avisó un pago de ${formatARS(payment.amount)}${movementContext}.`;
 }
 
 export function PaymentNotificationsSheet({ onPaymentUpdated }: PaymentNotificationsSheetProps) {

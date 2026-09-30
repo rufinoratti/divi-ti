@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
-import { type GroupLedger, type Member, type LedgerMovement, type SettlementPayment, calculateBalances, calculateSettlements } from '@/lib/ledger';
+import { type GroupLedger, type Member, type LedgerMovement, type SettlementPayment, calculateMovementObligations } from '@/lib/ledger';
 import { ACTIVE_GROUP_STORAGE_KEY, ALL_GROUPS_SELECTION, GROUP_SELECTION_VERSION_KEY } from '@/lib/group-state';
 
 export type Tab = 'inicio' | 'actividad' | 'balance' | 'perfil';
@@ -239,12 +239,11 @@ export function useMovements(userId?: string) {
     }
   }, [groupId]);
 
-  const balances = useMemo(() => calculateBalances(members, movements, payments), [movements, members, payments]);
-  const settlements = useMemo(() => activeGroup ? calculateSettlements(members, balances) : [], [activeGroup, balances, members]);
+  const obligations = useMemo(() => calculateMovementObligations(members, movements, payments), [members, movements, payments]);
   const groupLedgers = useMemo<GroupLedger[]>(() => groups.map((group) => {
     const groupMovements = movements.filter((movement) => movement.groupId === group.id);
     const groupPayments = payments.filter((payment) => payment.groupId === group.id);
-    const groupBalances = calculateBalances(group.members, groupMovements, groupPayments);
+    const groupObligations = calculateMovementObligations(group.members, groupMovements, groupPayments);
     return {
       id: group.id,
       name: group.name,
@@ -252,8 +251,7 @@ export function useMovements(userId?: string) {
       currentMemberId: userId ? group.memberIdsByUserId[userId] ?? null : null,
       movements: groupMovements,
       payments: groupPayments,
-      balances: groupBalances,
-      settlements: calculateSettlements(group.members, groupBalances),
+      obligations: groupObligations,
     };
   }), [groups, movements, payments, userId]);
   const groupOptions = groups.map(({ id, name }) => ({ id, name }));
@@ -264,8 +262,7 @@ export function useMovements(userId?: string) {
     loadError,
     addMovement,
     refresh,
-    balances,
-    settlements,
+    obligations,
     members,
     currentMemberIds,
     groupLedgers,

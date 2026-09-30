@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 
 import { createSettlementSchema, groupIdQuerySchema, resolveSettlementSchema } from '@/lib/api/schemas';
-import { calculateBalances, calculateSettlements, roundCurrency, toCurrencyCents, type LedgerMovement, type Member, type SettlementPayment } from '@/lib/ledger';
+import { roundCurrency, toCurrencyCents, type SettlementPayment } from '@/lib/ledger';
 import {
   authErrorResponse,
   configurationErrorResponse,
@@ -12,19 +12,16 @@ import {
 } from '@/lib/auth/http';
 import { createSupabaseRouteClient } from '@/lib/supabase/server';
 
-const settlementFields = 'id, grupo_id, pagador_id, receptor_id, monto, estado, reportado_por, creado_en, resuelto_por, resuelto_en';
+const settlementFields = 'id, grupo_id, movimiento_id, pagador_id, receptor_id, monto, estado, reportado_por, creado_en, resuelto_por, resuelto_en';
 type RouteSupabase = ReturnType<typeof createSupabaseRouteClient>['supabase'];
 
-type DatabaseMovement = {
+type ObligationMovement = {
   id: string;
   grupo_id: string;
   tipo: 'gasto' | 'prestamo';
-  descripcion: string;
   monto: number;
   pagado_por: string;
   receptor: string | null;
-  categoria: string;
-  creado_en: string;
   movimiento_participantes?: Array<{ miembro_id: string; monto_parte: number }>;
 };
 
@@ -32,6 +29,7 @@ function mapSettlement(row: Record<string, unknown>): SettlementPayment {
   return {
     id: row.id as string,
     groupId: row.grupo_id as string,
+    movementId: (row.movimiento_id as string | null) ?? null,
     from: row.pagador_id as string,
     to: row.receptor_id as string,
     amount: Number(row.monto),
@@ -43,60 +41,44 @@ function mapSettlement(row: Record<string, unknown>): SettlementPayment {
   };
 }
 
-async function getCurrentSettlementAmount(
+async function getCurrentMovementObligationAmount(
   supabase: RouteSupabase,
   groupId: string,
+  movementId: string,
   fromMemberId: string,
   toMemberId: string,
 ) {
-  const [membersResult, movementsResult, paymentsResult] = await Promise.all([
-    supabase
-      .from('miembros')
-      .select('id, nombre, iniciales, usuario_id')
-      .eq('grupo_id', groupId),
-    supabase
-      .from('movimientos')
-      .select('id, grupo_id, tipo, descripcion, monto, pagado_por, receptor, categoria, creado_en, movimiento_participantes(miembro_id, monto_parte)')
-      .eq('grupo_id', groupId),
-    supabase
-      .from('liquidaciones')
-      .select(settlementFields)
-      .eq('grupo_id', groupId)
-      .eq('estado', 'confirmada'),
-  ]);
+  const { data: rawMovement, error: movementError } = await supabase
+    .from('movimientos')
+    .select('id, grupo_id, tipo, monto, pagado_por, receptor, movimiento_participantes(miembro_id, monto_parte)')
+    .eq('id', movementId)
+    .eq('grupo_id', groupId)
+    .maybeSingle();
+  if (movementError) throw new Error('No se pudo revisar la deuda del movimiento.');
+  if (!rawMovement) return null;
 
-  if (membersResult.error || movementsResult.error || paymentsResult.error) {
-    throw new Error('No se pudo calcular el balance actualizado.');
+  const movement = rawMovement as ObligationMovement;
+  let amount = 0;
+  if (movement.tipo === 'gasto' && movement.pagado_por === toMemberId && fromMemberId !== toMemberId) {
+    const participant = (movement.movimiento_participantes ?? []).find((item) => item.miembro_id === fromMemberId);
+    amount = Number(participant?.monto_parte ?? 0);
+  } else if (movement.tipo === 'prestamo' && movement.pagado_por === toMemberId && movement.receptor === fromMemberId) {
+    amount = Number(movement.monto);
   }
+  if (amount <= 0) return null;
 
-  const members: Member[] = (membersResult.data ?? []).map((member) => ({
-    id: member.id,
-    name: member.nombre,
-    initials: member.iniciales,
-    userId: member.usuario_id,
-  }));
-  const movements: LedgerMovement[] = ((movementsResult.data ?? []) as DatabaseMovement[]).map((movement) => {
-    const participants = movement.movimiento_participantes ?? [];
-    return {
-      id: movement.id,
-      kind: movement.tipo === 'prestamo' ? 'loan' : 'expense',
-      description: movement.descripcion,
-      amount: Number(movement.monto),
-      paidBy: movement.pagado_por,
-      recipient: movement.receptor ?? undefined,
-      category: movement.categoria as LedgerMovement['category'],
-      participants: participants.map((participant) => participant.miembro_id),
-      participantShares: Object.fromEntries(
-        participants.map((participant) => [participant.miembro_id, Number(participant.monto_parte)]),
-      ),
-      createdAt: movement.creado_en,
-    };
-  });
-  const payments = (paymentsResult.data ?? []).map((payment) => mapSettlement(payment as Record<string, unknown>));
-  const balances = calculateBalances(members, movements, payments);
-  return calculateSettlements(members, balances).find((settlement) => (
-    settlement.from === fromMemberId && settlement.to === toMemberId
-  ))?.amount ?? null;
+  const { data: confirmedPayments, error: paymentsError } = await supabase
+    .from('liquidaciones')
+    .select('monto')
+    .eq('grupo_id', groupId)
+    .eq('movimiento_id', movementId)
+    .eq('pagador_id', fromMemberId)
+    .eq('receptor_id', toMemberId)
+    .eq('estado', 'confirmada');
+  if (paymentsError) throw new Error('No se pudieron revisar los pagos confirmados.');
+
+  const confirmedCents = (confirmedPayments ?? []).reduce((sum, payment) => sum + toCurrencyCents(Number(payment.monto)), 0);
+  return roundCurrency(Math.max(0, toCurrencyCents(amount) - confirmedCents) / 100);
 }
 
 function settlementResponse(row: Record<string, unknown>, status = 200) {
@@ -176,20 +158,37 @@ export async function POST(request: NextRequest) {
       return errorResponse('RECIPIENT_ACCOUNT_REQUIRED', 'La otra persona necesita una cuenta vinculada para recibir la notificación.', 409);
     }
 
-    const currentAmount = await getCurrentSettlementAmount(
+    const { data: pendingPayment, error: pendingPaymentError } = await supabase
+      .from('liquidaciones')
+      .select('id')
+      .eq('grupo_id', parsed.data.groupId)
+      .eq('movimiento_id', parsed.data.movementId)
+      .eq('pagador_id', parsed.data.fromMemberId)
+      .eq('receptor_id', parsed.data.toMemberId)
+      .eq('estado', 'pendiente')
+      .limit(1)
+      .maybeSingle();
+    if (pendingPaymentError) return internalErrorResponse();
+    if (pendingPayment) {
+      return errorResponse('PAYMENT_ALREADY_PENDING', 'Ya avisaste un pago por este gasto. Esperá la respuesta de la otra persona.', 409);
+    }
+
+    const currentAmount = await getCurrentMovementObligationAmount(
       supabase,
       parsed.data.groupId,
+      parsed.data.movementId,
       parsed.data.fromMemberId,
       parsed.data.toMemberId,
     );
-    if (currentAmount === null || toCurrencyCents(currentAmount) !== toCurrencyCents(parsed.data.amount)) {
-      return errorResponse('SETTLEMENT_CHANGED', 'El balance cambió. Actualizá la pantalla antes de informar el pago.', 409);
+    if (currentAmount === null || toCurrencyCents(parsed.data.amount) > toCurrencyCents(currentAmount)) {
+      return errorResponse('OBLIGATION_CHANGED', 'El monto supera lo que debés por este gasto. Actualizá la pantalla y revisá el balance.', 409);
     }
 
     const { data: settlement, error } = await supabase
       .from('liquidaciones')
       .insert({
         grupo_id: parsed.data.groupId,
+        movimiento_id: parsed.data.movementId,
         pagador_id: parsed.data.fromMemberId,
         receptor_id: parsed.data.toMemberId,
         monto: roundCurrency(parsed.data.amount),
@@ -200,7 +199,7 @@ export async function POST(request: NextRequest) {
 
     if (error) {
       if (error.code === '23505') {
-        return errorResponse('PAYMENT_ALREADY_PENDING', 'Ya hay un aviso de pago pendiente entre ustedes.', 409);
+        return errorResponse('PAYMENT_ALREADY_PENDING', 'Ya avisaste un pago por este gasto. Esperá la respuesta de la otra persona.', 409);
       }
       if (error.code === '42501') return errorResponse('FORBIDDEN', 'No tenés permiso para informar este pago.', 403);
       return internalErrorResponse();
@@ -252,15 +251,16 @@ export async function PATCH(request: NextRequest) {
       return errorResponse('FORBIDDEN', 'Solo la persona que recibió el pago puede responder este aviso.', 403);
     }
 
-    if (parsed.data.action === 'confirm') {
-      const currentAmount = await getCurrentSettlementAmount(
+    if (parsed.data.action === 'confirm' && settlement.movimiento_id) {
+      const currentAmount = await getCurrentMovementObligationAmount(
         supabase,
         settlement.grupo_id,
+        settlement.movimiento_id,
         settlement.pagador_id,
         settlement.receptor_id,
       );
       if (currentAmount === null || toCurrencyCents(currentAmount) < toCurrencyCents(Number(settlement.monto))) {
-        return errorResponse('SETTLEMENT_CHANGED', 'El balance cambió desde que se informó el pago. Rechazalo y revisen el saldo actual.', 409);
+        return errorResponse('OBLIGATION_CHANGED', 'La deuda de este gasto cambió desde que se informó el pago. Rechazá el aviso y revisen el balance.', 409);
       }
     }
 

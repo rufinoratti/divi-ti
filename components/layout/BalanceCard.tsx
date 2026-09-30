@@ -3,22 +3,31 @@
 import { formatARS } from '@/lib/utils';
 
 interface BalanceCardProps {
-  currentBalance: number;
+  currentOwing: number;
+  currentOwed: number;
+  owingCount: number;
+  owedCount: number;
   totalExpenses: number;
   memberCount: number;
   onViewBalance: () => void;
   onAddMovement: () => void;
 }
 
-export function BalanceCard({ currentBalance, totalExpenses, memberCount, onViewBalance, onAddMovement }: BalanceCardProps) {
+export function BalanceCard({ currentOwing, currentOwed, owingCount, owedCount, totalExpenses, memberCount, onViewBalance, onAddMovement }: BalanceCardProps) {
   return (
     <>
       <section className="rounded-[30px] border border-[#dcd6ff] bg-[#ebe8ff] p-6" aria-label="Balance personal">
-        <p className="text-sm font-semibold text-[#5144d8]">Tu balance neto</p>
-        <p className="mt-3 text-[clamp(2.6rem,11vw,4rem)] font-bold leading-none tracking-[-0.06em] tabular-nums text-[#493dd0]">{formatARS(currentBalance)}</p>
-        <p className="mt-3 max-w-[30ch] text-sm leading-6 text-[#49436f]">
-          {currentBalance >= 0 ? 'El grupo te debe este importe en total.' : 'Este es el importe total que te falta saldar.'}
-        </p>
+        <p className="text-sm font-semibold text-[#5144d8]">Tus deudas por gasto</p>
+        <div className="mt-4 grid grid-cols-2 gap-4">
+          <div>
+            <p className="text-xs font-semibold text-[#5f588c]">Debés · {owingCount} {owingCount === 1 ? 'deuda' : 'deudas'}</p>
+            <p className="mt-1 text-2xl font-bold leading-none tracking-[-0.045em] tabular-nums text-[#493dd0]">{formatARS(currentOwing)}</p>
+          </div>
+          <div>
+            <p className="text-xs font-semibold text-[#5f588c]">Te deben · {owedCount} {owedCount === 1 ? 'deuda' : 'deudas'}</p>
+            <p className="mt-1 text-2xl font-bold leading-none tracking-[-0.045em] tabular-nums text-[#493dd0]">{formatARS(currentOwed)}</p>
+          </div>
+        </div>
         <div className="mt-6 grid grid-cols-2 gap-3 border-t border-[#d4cefa] pt-5">
           <div>
             <p className="text-xs font-semibold text-[#5f588c]">Gastos del mes</p>
