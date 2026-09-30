@@ -203,7 +203,7 @@ export function BalanceSection({ members, movements, obligations, payments, grou
               <article key={obligation.id} className="rounded-2xl bg-white p-4">
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0">
-                    <p className="truncate text-sm font-bold">{obligation.description}</p>
+                    <p className="whitespace-pre-line text-sm font-bold">{obligation.description}</p>
                     <div className="mt-2 flex items-center gap-2">
                       <Avatar member={(isOwing ? creditor : debtor) ?? members[0]!} size="small" />
                       <p className="text-sm text-[#5d5d5d]">
@@ -291,7 +291,7 @@ export function BalanceSection({ members, movements, obligations, payments, grou
           </DialogClose>
           <DialogHeader>
             <DialogTitle className="text-2xl font-bold tracking-[-0.04em]">Avisar un pago</DialogTitle>
-            <DialogDescription className="mt-2 leading-6 text-[#5d5d5d]">
+            <DialogDescription className="mt-2 whitespace-pre-line leading-6 text-[#5d5d5d]">
               {selectedObligation && `Por ${selectedObligation.description} a ${members.find((member) => member.id === selectedObligation.to)?.name ?? 'un integrante'}. Divi no transfiere plata: avisamos el importe y la otra persona confirma cuando lo recibe.`}
             </DialogDescription>
           </DialogHeader>

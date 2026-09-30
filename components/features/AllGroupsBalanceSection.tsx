@@ -74,12 +74,12 @@ export function AllGroupsBalanceSection({ groups, onOpenGroup }: AllGroupsBalanc
                 </div>
               </div>
               {nextOwedByMe && (
-                <p className="mt-3 text-xs leading-5 text-[#5d5d5d]">
+                <p className="mt-3 whitespace-pre-line text-xs leading-5 text-[#5d5d5d]">
                   Le debés a {fromMember?.name ?? 'un integrante'} {formatARS(nextOwedByMe.remainingAmount)} por {nextOwedByMe.description}
                 </p>
               )}
               {!nextOwedByMe && nextOwedToMe && (
-                <p className="mt-3 text-xs leading-5 text-[#5d5d5d]">
+                <p className="mt-3 whitespace-pre-line text-xs leading-5 text-[#5d5d5d]">
                   {toMember?.name ?? 'Un integrante'} te debe {formatARS(nextOwedToMe.remainingAmount)} por {nextOwedToMe.description}
                 </p>
               )}

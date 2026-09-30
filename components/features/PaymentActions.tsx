@@ -128,7 +128,7 @@ export function PendingPaymentsSection({ groups, onPaymentChanged, className = '
         <article key={payment.id} className="rounded-[24px] border border-[#ead7a8] bg-[#fffaf0] p-4">
           <div className="flex items-start justify-between gap-3">
             <div className="min-w-0">
-              <h3 className="truncate text-base font-bold">{movement.description}</h3>
+              <h3 className="whitespace-pre-line text-base font-bold">{movement.description}</h3>
               {groups.length > 1 && <p className="mt-1 text-xs text-[#5d5d5d]">{group.name}</p>}
             </div>
             <p className="shrink-0 text-base font-bold tabular-nums">{formatARS(payment.amount)}</p>
