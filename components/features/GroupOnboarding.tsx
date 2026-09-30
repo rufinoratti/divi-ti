@@ -2,7 +2,7 @@
 
 import { useState, type FormEvent } from 'react';
 import { GroupJoinCode } from '@/components/features/GroupJoinCode';
-import { ACTIVE_GROUP_STORAGE_KEY, GROUP_SELECTION_VERSION_KEY } from '@/lib/group-state';
+import { OPEN_GROUP_ONCE_STORAGE_KEY } from '@/lib/group-state';
 
 interface GroupOnboardingProps {
   onCancel?: () => void;
@@ -13,7 +13,7 @@ export function GroupOnboarding({ onCancel }: GroupOnboardingProps) {
   const [memberName, setMemberName] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState('');
-  const [createdGroup, setCreatedGroup] = useState<{ name: string; code: string } | null>(null);
+  const [createdGroup, setCreatedGroup] = useState<{ id: string | null; name: string; code: string } | null>(null);
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -37,14 +37,7 @@ export function GroupOnboarding({ onCancel }: GroupOnboardingProps) {
         return;
       }
 
-      if (data.group.id) {
-        try {
-          window.localStorage.setItem(ACTIVE_GROUP_STORAGE_KEY, data.group.id);
-          window.localStorage.setItem(GROUP_SELECTION_VERSION_KEY, '1');
-        } catch {}
-      }
-
-      setCreatedGroup({ name: data.group.nombre ?? name, code: data.group.codigo_union });
+      setCreatedGroup({ id: data.group.id ?? null, name: data.group.nombre ?? name, code: data.group.codigo_union });
     } catch {
       setError('No pudimos conectarnos con el servicio. Probá de nuevo.');
     } finally {
@@ -64,7 +57,14 @@ export function GroupOnboarding({ onCancel }: GroupOnboardingProps) {
 
           <button
             type="button"
-            onClick={() => window.location.assign('/')}
+            onClick={() => {
+              if (createdGroup.id) {
+                try {
+                  window.sessionStorage.setItem(OPEN_GROUP_ONCE_STORAGE_KEY, createdGroup.id);
+                } catch {}
+              }
+              window.location.assign('/');
+            }}
             className="mt-6 flex min-h-13 w-full items-center justify-center rounded-full bg-[#594ff4] px-5 text-sm font-bold text-white transition active:scale-[0.98]"
           >
             Ir al grupo

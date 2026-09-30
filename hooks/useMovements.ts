@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { type GroupLedger, type Member, type LedgerMovement, type SettlementPayment, calculateMovementObligations } from '@/lib/ledger';
-import { ACTIVE_GROUP_STORAGE_KEY, ALL_GROUPS_SELECTION, GROUP_SELECTION_VERSION_KEY } from '@/lib/group-state';
+import { ALL_GROUPS_SELECTION, OPEN_GROUP_ONCE_STORAGE_KEY } from '@/lib/group-state';
 import { getSupabaseBrowserClient } from '@/lib/supabase/client';
 
 export type Tab = 'inicio' | 'actividad' | 'balance' | 'perfil';
@@ -116,15 +116,16 @@ export function useMovements(userId?: string) {
           };
         });
 
-        let preferredGroupId: string | null = null;
-        let hasExplicitSelection = false;
+        if (cancelled) return;
+
+        let requestedGroupId: string | null = null;
         try {
-          preferredGroupId = window.localStorage.getItem(ACTIVE_GROUP_STORAGE_KEY);
-          hasExplicitSelection = window.localStorage.getItem(GROUP_SELECTION_VERSION_KEY) === '1';
+          requestedGroupId = window.sessionStorage.getItem(OPEN_GROUP_ONCE_STORAGE_KEY);
+          window.sessionStorage.removeItem(OPEN_GROUP_ONCE_STORAGE_KEY);
         } catch {}
 
-        const selectedGroup = hasExplicitSelection
-          ? availableGroups.find((group) => group.id === preferredGroupId)
+        const selectedGroup = requestedGroupId
+          ? availableGroups.find((group) => group.id === requestedGroupId)
           : undefined;
 
         setGroups(availableGroups);
@@ -132,11 +133,6 @@ export function useMovements(userId?: string) {
         setLoadedUserId(authenticatedUserId);
         setIsGroupsReady(true);
         if (availableGroups.length === 0) setIsMovementsReady(true);
-
-        try {
-          window.localStorage.setItem(ACTIVE_GROUP_STORAGE_KEY, selectedGroup?.id ?? ALL_GROUPS_SELECTION);
-          window.localStorage.setItem(GROUP_SELECTION_VERSION_KEY, '1');
-        } catch {}
       } catch {
         if (cancelled) return;
         setGroups([]);
@@ -212,10 +208,6 @@ export function useMovements(userId?: string) {
     setPayments([]);
     setGroupId(nextGroupId);
     setLoadError('');
-    try {
-      window.localStorage.setItem(ACTIVE_GROUP_STORAGE_KEY, nextGroupId ?? ALL_GROUPS_SELECTION);
-      window.localStorage.setItem(GROUP_SELECTION_VERSION_KEY, '1');
-    } catch {}
   }, [groupId, groups]);
 
   const activeGroup = groups.find((group) => group.id === groupId) ?? null;
