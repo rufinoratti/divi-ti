@@ -3,14 +3,13 @@
 import { useState } from 'react';
 import { ArrowUpRightIcon, CheckIcon, Clock3Icon } from 'lucide-react';
 
-import { type Member, type Settlement, type SettlementPayment } from '@/lib/ledger';
+import { calculateSettlements, type Member, type Settlement, type SettlementPayment } from '@/lib/ledger';
 import { Avatar } from '@/components/layout/Avatar';
 import { formatARS } from '@/lib/utils';
 
 interface BalanceSectionProps {
   members: Member[];
   balances: Record<string, number>;
-  settlements: Settlement[];
   payments: SettlementPayment[];
   groupId: string;
   currentMemberId: string;
@@ -21,9 +20,13 @@ function formatPaymentDate(value: string) {
   return new Intl.DateTimeFormat('es-AR', { dateStyle: 'medium', timeStyle: 'short' }).format(new Date(value));
 }
 
-export function BalanceSection({ members, balances, settlements, payments, groupId, currentMemberId, onPaymentChanged }: BalanceSectionProps) {
+export function BalanceSection({ members, balances, payments, groupId, currentMemberId, onPaymentChanged }: BalanceSectionProps) {
   const [submittingPair, setSubmittingPair] = useState<string | null>(null);
   const [error, setError] = useState('');
+  const settlements = calculateSettlements(members, balances);
+  const hasOwnSettlement = settlements.some((settlement) => settlement.from === currentMemberId);
+  const hasPendingOwnPayment = payments.some((payment) => payment.from === currentMemberId && payment.status === 'pendiente');
+  const hasUnmatchedDebt = (balances[currentMemberId] ?? 0) < -0.01 && !hasOwnSettlement && !hasPendingOwnPayment;
 
   async function reportPayment(settlement: Settlement) {
     const pairKey = `${settlement.from}:${settlement.to}`;
@@ -73,6 +76,11 @@ export function BalanceSection({ members, balances, settlements, payments, group
           </div>
         </div>
         {error && <p role="alert" className="mt-4 rounded-2xl bg-[#fef4f4] p-3 text-sm font-medium text-[#b42318]">{error}</p>}
+        {hasUnmatchedDebt && (
+          <p role="status" className="mt-4 rounded-2xl bg-white p-4 text-sm leading-5 text-[#5d5d5d]">
+            Tu saldo figura pendiente, pero no encontramos a quién asignar el pago. Actualizá la pantalla y revisá el balance del grupo.
+          </p>
+        )}
         <div className="mt-5 space-y-3">
           {settlements.length === 0 && (
             <p className="rounded-2xl bg-white p-4 text-sm text-[#5d5d5d]">El grupo está al día.</p>

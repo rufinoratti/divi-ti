@@ -49,7 +49,6 @@ export default function Home() {
     addMovement,
     refresh,
     balances,
-    settlements,
     members,
     payments,
     currentMemberIds,
@@ -176,7 +175,6 @@ export default function Home() {
             <BalanceSection
               members={members}
               balances={balances}
-              settlements={settlements}
               payments={payments}
               groupId={groupId!}
               currentMemberId={currentMemberId!}
