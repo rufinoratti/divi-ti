@@ -5,7 +5,7 @@ import { useParams } from 'next/navigation';
 
 import { AuthLoading } from '@/components/layout/AuthLoading';
 import { useAuth } from '@/hooks/useAuth';
-import { ACTIVE_GROUP_STORAGE_KEY, GROUP_SELECTION_VERSION_KEY } from '@/lib/group-state';
+import { OPEN_GROUP_ONCE_STORAGE_KEY } from '@/lib/group-state';
 
 type InviteStatus = 'waiting' | 'login' | 'accepting' | 'success' | 'error';
 
@@ -43,8 +43,7 @@ export default function InvitePage() {
         if (!response.ok) throw new Error(data.error?.message ?? 'No pudimos aceptar la invitación.');
         if (data.member?.grupo_id) {
           try {
-            window.localStorage.setItem(ACTIVE_GROUP_STORAGE_KEY, data.member.grupo_id);
-            window.localStorage.setItem(GROUP_SELECTION_VERSION_KEY, '1');
+            window.sessionStorage.setItem(OPEN_GROUP_ONCE_STORAGE_KEY, data.member.grupo_id);
           } catch {}
         }
         setMessage(data.message ?? 'Te sumaste al grupo correctamente.');

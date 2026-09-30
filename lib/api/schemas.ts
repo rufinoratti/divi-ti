@@ -132,7 +132,7 @@ export const createMovementSchema = z
       .string({ message: 'Ingresá una descripción.' })
       .trim()
       .min(1, 'La descripción no puede estar vacía.')
-      .max(160, 'La descripción no puede superar los 160 caracteres.'),
+      .max(1000, 'La descripción no puede superar los 1000 caracteres.'),
     amount: z
       .number({ message: 'El importe debe ser un número.' })
       .finite('El importe debe ser un número válido.')

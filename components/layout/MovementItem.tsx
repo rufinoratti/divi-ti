@@ -34,7 +34,7 @@ export function MovementItem({ movement, members, currentMemberId, currentMember
       <MovementIcon category={movement.category} />
       <div className="min-w-0 flex-1">
         <div className="flex items-start justify-between gap-3">
-          <p className="truncate text-sm font-bold">{movement.description}</p>
+          <p className="whitespace-pre-line text-sm font-bold">{movement.description}</p>
           <p className={`shrink-0 text-sm font-bold tabular-nums ${isPositive ? 'text-[#594ff4]' : 'text-[#1f1f1f]'}`}>
             {isPositive ? '+' : '-'}{formatARS(movement.amount)}
           </p>

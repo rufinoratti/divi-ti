@@ -801,3 +801,11 @@ button {
     transition-duration: 0.01ms !important;
   }
 }
+
+@media (pointer: coarse) {
+  :root input,
+  :root textarea,
+  :root select {
+    font-size: 16px;
+  }
+}
