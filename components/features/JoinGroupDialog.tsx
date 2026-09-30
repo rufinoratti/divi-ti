@@ -8,9 +8,11 @@ import { ACTIVE_GROUP_STORAGE_KEY, GROUP_SELECTION_VERSION_KEY } from '@/lib/gro
 
 interface JoinGroupDialogProps {
   compact?: boolean;
+  compactLabel?: string;
+  compactVariant?: 'default' | 'soft';
 }
 
-export function JoinGroupDialog({ compact = false }: JoinGroupDialogProps) {
+export function JoinGroupDialog({ compact = false, compactLabel = 'Unirme con un código', compactVariant = 'default' }: JoinGroupDialogProps) {
   const codeFieldId = `join-group-code-${useId()}`;
   const [open, setOpen] = useState(false);
   const [code, setCode] = useState('');
@@ -65,11 +67,13 @@ export function JoinGroupDialog({ compact = false }: JoinGroupDialogProps) {
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogTrigger
         className={compact
-          ? 'inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-2xl border border-[#e7e7e7] px-5 text-sm font-bold text-[#1f1f1f] transition active:scale-[0.98]'
+          ? compactVariant === 'soft'
+            ? 'inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-full border border-[#e4dfff] bg-[#efedff] px-3 text-sm font-bold text-[#5144d8] transition hover:bg-[#e6e2ff] active:scale-[0.98]'
+            : 'inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-2xl border border-[#e7e7e7] px-5 text-sm font-bold text-[#1f1f1f] transition active:scale-[0.98]'
           : 'mt-5 inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-full border border-[#e7e7e7] px-5 text-sm font-bold text-[#1f1f1f] transition active:scale-[0.98]'}
       >
         <KeyRoundIcon aria-hidden="true" size={17} />
-        Unirme con un código
+        {compactLabel}
       </DialogTrigger>
 
       <DialogContent showCloseButton={false} className="max-w-[calc(100%-2rem)] rounded-[28px] bg-white p-6 sm:max-w-md">

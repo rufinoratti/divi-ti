@@ -9,9 +9,11 @@ import { ACTIVE_GROUP_STORAGE_KEY, GROUP_SELECTION_VERSION_KEY } from '@/lib/gro
 
 interface CreateGroupDialogProps {
   compact?: boolean;
+  compactLabel?: string;
+  compactVariant?: 'default' | 'primary';
 }
 
-export function CreateGroupDialog({ compact = false }: CreateGroupDialogProps) {
+export function CreateGroupDialog({ compact = false, compactLabel = 'Crear otro grupo', compactVariant = 'default' }: CreateGroupDialogProps) {
   const id = useId();
   const titleId = `create-group-title-${id}`;
   const nameFieldId = `new-group-name-${id}`;
@@ -67,10 +69,12 @@ export function CreateGroupDialog({ compact = false }: CreateGroupDialogProps) {
     <Dialog open={open} onOpenChange={handleOpenChange}>
       {compact ? (
         <DialogTrigger
-          className="inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-2xl border border-[#594ff4] px-5 text-sm font-bold text-[#594ff4] transition active:scale-[0.98]"
+          className={compactVariant === 'primary'
+            ? 'inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-full bg-[#594ff4] px-3 text-sm font-bold text-white transition hover:bg-[#4a40df] active:scale-[0.98]'
+            : 'inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-2xl border border-[#594ff4] px-5 text-sm font-bold text-[#594ff4] transition active:scale-[0.98]'}
         >
           <PlusIcon aria-hidden="true" size={17} />
-          Crear otro grupo
+          {compactLabel}
         </DialogTrigger>
       ) : (
         <section className="mt-7 rounded-[30px] border border-[#e7e7e7] p-6" aria-labelledby={titleId}>
