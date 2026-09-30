@@ -3,6 +3,7 @@
 import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { type GroupLedger, type Member, type LedgerMovement, type SettlementPayment, calculateMovementObligations } from '@/lib/ledger';
 import { ACTIVE_GROUP_STORAGE_KEY, ALL_GROUPS_SELECTION, GROUP_SELECTION_VERSION_KEY } from '@/lib/group-state';
+import { getSupabaseBrowserClient } from '@/lib/supabase/client';
 
 export type Tab = 'inicio' | 'actividad' | 'balance' | 'perfil';
 
@@ -42,6 +43,29 @@ export function useMovements(userId?: string) {
   const [refreshToken, setRefreshToken] = useState(0);
   const loadedScopeRef = useRef<string | null>(null);
   const refresh = useCallback(() => setRefreshToken((current) => current + 1), []);
+
+  useEffect(() => {
+    if (!userId) return undefined;
+    const supabase = getSupabaseBrowserClient();
+    if (!supabase) return undefined;
+
+    let refreshTimer: ReturnType<typeof setTimeout> | undefined;
+    const scheduleRefresh = () => {
+      if (refreshTimer) clearTimeout(refreshTimer);
+      refreshTimer = setTimeout(refresh, 180);
+    };
+    const channel = supabase
+      .channel(`divi-ledger-${userId}`)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'movimientos' }, scheduleRefresh)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'movimiento_participantes' }, scheduleRefresh)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'liquidaciones' }, scheduleRefresh)
+      .subscribe();
+
+    return () => {
+      if (refreshTimer) clearTimeout(refreshTimer);
+      void supabase.removeChannel(channel);
+    };
+  }, [refresh, userId]);
 
   useEffect(() => {
     let cancelled = false;
@@ -220,9 +244,11 @@ export function useMovements(userId?: string) {
           description: movement.description,
           amount: movement.amount,
           category: movement.category,
+          divisionMethod: movement.divisionMethod ?? 'equal',
           paidBy: movement.paidBy,
           recipient: movement.recipient ?? null,
           participants: movement.participants,
+          participantShares: movement.participantShares,
         }),
       });
 
@@ -238,6 +264,43 @@ export function useMovements(userId?: string) {
       throw new Error('No se pudo guardar el movimiento. Revisá los datos o tu conexión e intentá de nuevo.');
     }
   }, [groupId]);
+
+  const updateMovement = useCallback(async (movement: LedgerMovement) => {
+    if (!groupId) throw new Error('No hay un grupo activo para editar el movimiento.');
+    const existing = movements.find((item) => item.id === movement.id);
+    if (!existing) throw new Error('No encontramos el movimiento que querés editar.');
+    setMovements((current) => current.map((item) => item.id === movement.id ? movement : item));
+
+    try {
+      const response = await fetch('/api/movements', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          movementId: movement.id,
+          groupId,
+          kind: movement.kind,
+          description: movement.description,
+          amount: movement.amount,
+          category: movement.category,
+          divisionMethod: movement.divisionMethod ?? 'equal',
+          paidBy: movement.paidBy,
+          recipient: movement.recipient ?? null,
+          participants: movement.participants,
+          participantShares: movement.participantShares,
+        }),
+      });
+      const data = await response.json() as { movement?: LedgerMovement; error?: { message?: string } };
+      if (!response.ok || !data.movement) {
+        throw new Error(data.error?.message ?? 'No se pudo actualizar el movimiento.');
+      }
+      setMovements((current) => current.map((item) => item.id === movement.id ? data.movement! : item));
+    } catch (error) {
+      setMovements((current) => current.map((item) => item.id === existing.id ? existing : item));
+      throw error instanceof Error
+        ? error
+        : new Error('No se pudo editar el movimiento. Revisá los datos o tu conexión e intentá de nuevo.');
+    }
+  }, [groupId, movements]);
 
   const obligations = useMemo(() => calculateMovementObligations(members, movements, payments), [members, movements, payments]);
   const groupLedgers = useMemo<GroupLedger[]>(() => groups.map((group) => {
@@ -261,6 +324,7 @@ export function useMovements(userId?: string) {
     isReady,
     loadError,
     addMovement,
+    updateMovement,
     refresh,
     obligations,
     members,

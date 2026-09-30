@@ -1,49 +1,41 @@
-# Requerimientos - Iteración 1
+# Requerimientos del MVP de Divi
 
-## Objetivo
+Este documento consolida el alcance del PDF de requerimientos para preparar un piloto con grupos de amigos o compañeros de vivienda. La aplicación usa español y ARS.
 
-Construir una demostración móvil de Divi que permita a un grupo registrar gastos compartidos y préstamos individuales, y entender el saldo neto de cada integrante sin cálculos manuales.
+## Flujo del movimiento
 
-## Alcance funcional
+- Crear gastos desde una frase libre o una foto del ticket. El OCR propone importe y descripción editables; si no puede leerlos, la carga manual sigue disponible.
+- Detectar gasto o préstamo desde la frase. Si falta información o hay más de una interpretación, pedir confirmación y no guardar automáticamente.
+- Registrar préstamos 1 a 1 desde un atajo.
+- Completar la carga en un máximo de dos pasos y medir el tiempo de punta a punta, con objetivo menor a 10 segundos.
 
-- Mostrar un grupo de demostración y sus cuatro integrantes.
-- Registrar un gasto grupal por texto, importe, categoría y persona que pagó.
-- Dividir cada gasto grupal en partes iguales entre los integrantes del grupo.
-- Registrar un préstamo puntual de una persona a otra.
-- Recalcular el balance neto de cada integrante luego de cada movimiento.
-- Mostrar quién debe pagar a quién para saldar el grupo.
-- Listar los movimientos recientes y permitir filtrarlos por tipo.
-- Persistir los datos en **Supabase** (PostgreSQL, tablas en español: `grupos`, `miembros`, `movimientos`).
-- Navegar entre Inicio, Actividad, Balance y Perfil sin recargar la aplicación.
+## División y balance
 
-## Reglas de negocio
+- Dividir gastos en partes iguales, por consumo real o proporcionalmente a los ingresos mensuales de las personas participantes.
+- En división por consumo, los importes individuales deben sumar el total. La división por ingresos requiere que cada participante tenga un ingreso guardado en su cuenta.
+- Mantener los ingresos privados para su titular; el cálculo puede devolver importes de reparto, pero nunca ingresos ajenos.
+- Mostrar balances netos por integrante y sugerir el menor número de pagos para grupos de hasta ocho integrantes.
+- Las sugerencias son informativas. Los pagos reales siguen asociados a un movimiento y requieren confirmación del destinatario; Divi no transfiere dinero.
 
-- Un gasto grupal acredita el importe completo a quien pagó y debita una parte igual a cada integrante incluido.
-- Un préstamo acredita el importe a quien presta y debita el mismo importe a quien lo recibe.
-- La suma de todos los balances debe ser cero.
-- Los importes se muestran en ARS y las etiquetas se muestran en español.
-- Una carga necesita descripción e importe mayor a cero. Un préstamo también necesita una persona receptora distinta a quien presta.
+## Grupos, datos y experiencia
 
-## Estados relevantes
+- Crear grupos, invitar integrantes y consultar los grupos a los que pertenece una cuenta.
+- Actualizar balances al crear o editar movimientos sin recargar la aplicación y sincronizar cambios entre integrantes.
+- Funcionar como aplicación web adaptable a teléfonos.
+- No guardar fotos de tickets; procesarlas en el dispositivo y descartar el archivo después de la lectura.
 
-- Carga inicial mientras se restaura el estado desde Supabase.
-- Historial vacío cuando no existen movimientos.
-- Error de validación inline al intentar guardar una carga incompleta.
-- Estado de éxito al volver inmediatamente al balance actualizado tras guardar.
+## Criterios de aceptación del piloto
 
-## Fuera de alcance en esta iteración
+- El flujo de foto y el flujo manual permiten corregir importe y descripción y completar la carga si OCR falla.
+- Los tres métodos de división producen importes exactos que suman el total, incluidos centavos sobrantes.
+- El balance neto de todos los integrantes suma cero y el optimizador produce el menor número de transferencias para grupos de hasta ocho integrantes.
+- Las sugerencias no escriben ni alteran liquidaciones, deudas pendientes o confirmadas.
+- Las políticas de base de datos impiden que una cuenta lea o cambie el ingreso de otra.
+- El recorrido se completa en dos pasos como máximo y tarda menos de 10 segundos en las pruebas de aceptación.
+- Probar el producto con 5 a 8 personas y hacer un piloto de cuatro semanas con un grupo real. Medir tiempo de carga, uso de foto frente a texto, retención semanal y percepción de justicia.
 
-- Inicio de sesión, invitaciones y datos compartidos en tiempo real.
-- Pagos reales y conciliación bancaria.
-- Foto de ticket, OCR, gastos recurrentes, recordatorios y reglas de división avanzadas.
-- Edición y eliminación de movimientos.
+## Fuera de alcance del piloto
 
-## Próxima iteración técnica
-
-1. Crear flujo de "Nuevo Grupo" → nombre → agregar miembros
-2. Editar/Eliminar movimientos (PUT/DELETE)
-3. Toast notifications
-4. Reglas de división configurables
-5. Autenticación con Supabase Auth
-6. Tests
-7. Deploy
+- Transferencias de dinero, conciliación bancaria y pagos reales.
+- División manual basada en acuerdos libres, ítems del ticket, gastos recurrentes, recordatorios y bot de WhatsApp.
+- Grupos con más de ocho integrantes para la sugerencia exacta de pagos.

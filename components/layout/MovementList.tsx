@@ -10,6 +10,8 @@ interface MovementListProps {
   currentMemberId: string | null;
   currentMemberIds?: string[];
   emptyLabel?: string;
+  onEdit?: (movement: LedgerMovement) => void;
+  lockedMovementIds?: string[];
 }
 
 export function MovementList({
@@ -18,6 +20,8 @@ export function MovementList({
   currentMemberId,
   currentMemberIds,
   emptyLabel = 'Todavía no hay movimientos.',
+  onEdit,
+  lockedMovementIds = [],
 }: MovementListProps) {
   if (!movements.length) {
     return (
@@ -32,7 +36,7 @@ export function MovementList({
   return (
     <div className="space-y-3">
       {movements.map((movement) => (
-        <MovementItem key={movement.id} movement={movement} members={members} currentMemberId={currentMemberId} currentMemberIds={currentMemberIds} />
+        <MovementItem key={movement.id} movement={movement} members={members} currentMemberId={currentMemberId} currentMemberIds={currentMemberIds} onEdit={onEdit} isLocked={lockedMovementIds.includes(movement.id)} />
       ))}
     </div>
   );

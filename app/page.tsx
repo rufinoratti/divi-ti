@@ -16,7 +16,7 @@ import { AppLoading } from '@/components/layout/AppLoading';
 import { MovementList } from '@/components/layout/MovementList';
 import { useMovements, type Tab } from '@/hooks/useMovements';
 import { useAuth } from '@/hooks/useAuth';
-import { type LedgerMovement } from '@/lib/ledger';
+import { type LedgerMovement, type MovementKind } from '@/lib/ledger';
 import { GroupOnboarding } from '@/components/features/GroupOnboarding';
 import { GuestOnboarding } from '@/components/features/GuestOnboarding';
 import { EmptyGroupsHome } from '@/components/features/EmptyGroupsHome';
@@ -48,6 +48,7 @@ export default function Home() {
     isReady,
     loadError,
     addMovement,
+    updateMovement,
     refresh,
     obligations,
     members,
@@ -65,19 +66,24 @@ export default function Home() {
   const [activeTab, setActiveTab] = useState<Tab>('inicio');
   const [activityFilter, setActivityFilter] = useState<ActivityFilter>('all');
   const [composerOpen, setComposerOpen] = useState(false);
+  const [composerKind, setComposerKind] = useState<MovementKind>('expense');
+  const [editingMovement, setEditingMovement] = useState<LedgerMovement | null>(null);
   const [isCreatingGroup, setIsCreatingGroup] = useState(false);
 
   const totalExpenses = movements.filter((m) => m.kind === 'expense').reduce((sum, m) => sum + m.amount, 0);
   const recentMovements = movements.slice(0, 4);
   const filteredMovements = activityFilter === 'all' ? movements : movements.filter((m) => m.kind === activityFilter);
 
-  const handleSubmitMovement = (movement: LedgerMovement) => addMovement(movement);
+  const handleSubmitMovement = (movement: LedgerMovement) => editingMovement ? updateMovement(movement) : addMovement(movement);
+  const openComposer = (kind: MovementKind) => { setEditingMovement(null); setComposerKind(kind); setComposerOpen(true); };
+  const editMovement = (movement: LedgerMovement) => { setEditingMovement(movement); setComposerKind(movement.kind); setComposerOpen(true); };
 
   const handleGroupChange = (nextGroupId: string | null) => {
     selectGroup(nextGroupId);
     setActiveTab('inicio');
     setActivityFilter('all');
     setComposerOpen(false);
+    setEditingMovement(null);
   };
 
   if (isLoading) return <AppLoading />;
@@ -129,6 +135,7 @@ export default function Home() {
     setActiveTab(tab);
     setActivityFilter('all');
     setComposerOpen(false);
+    setEditingMovement(null);
   }
 
   return (
@@ -157,7 +164,7 @@ export default function Home() {
               </div>
 
               <PendingPaymentsSection groups={groupLedgers.filter((group) => group.id === groupId)} onPaymentChanged={refresh} />
-              <BalanceCard currentOwing={currentOwing} currentOwed={currentOwed} owingCount={currentOwingCount} owedCount={currentOwedCount} totalExpenses={totalExpenses} memberCount={members.length} onViewBalance={() => setActiveTab('balance')} onAddMovement={() => setComposerOpen(true)} />
+              <BalanceCard currentOwing={currentOwing} currentOwed={currentOwed} owingCount={currentOwingCount} owedCount={currentOwedCount} totalExpenses={totalExpenses} memberCount={members.length} onViewBalance={() => setActiveTab('balance')} onAddMovement={() => openComposer('expense')} onAddLoan={() => openComposer('loan')} />
 
               <section aria-labelledby="recent-title">
                 <div className="mb-4 flex items-end justify-between">
@@ -179,6 +186,8 @@ export default function Home() {
             allGroups={allGroupsView}
             activityFilter={activityFilter}
             onActivityFilterChange={setActivityFilter}
+            onEditMovement={allGroupsView ? undefined : editMovement}
+            lockedMovementIds={payments.filter((payment) => payment.movementId).map((payment) => payment.movementId!)}
           />
         )}
 
@@ -217,7 +226,7 @@ export default function Home() {
       <Navigation activeTab={activeTab} onTabChange={setActiveTab} />
 
       {!allGroupsView && currentMemberId && groupId && (
-        <MovementComposer key={groupId} open={composerOpen} onOpenChange={setComposerOpen} members={members} currentMemberId={currentMemberId} onSubmit={handleSubmitMovement} />
+        <MovementComposer key={groupId} open={composerOpen} onOpenChange={(open) => { setComposerOpen(open); if (!open) setEditingMovement(null); }} members={members} currentMemberId={currentMemberId} groupId={groupId} initialKind={composerKind} editingMovement={editingMovement} onSubmit={handleSubmitMovement} />
       )}
     </main>
   );

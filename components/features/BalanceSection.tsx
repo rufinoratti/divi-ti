@@ -13,7 +13,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import { roundCurrency, toCurrencyCents, type LedgerMovement, type Member, type MovementObligation, type SettlementPayment, summarizeMemberObligations } from '@/lib/ledger';
+import { calculateNetMemberBalances, roundCurrency, suggestMinimumTransfers, toCurrencyCents, type LedgerMovement, type Member, type MovementObligation, type SettlementPayment, summarizeMemberObligations } from '@/lib/ledger';
 import { formatARS } from '@/lib/utils';
 
 interface BalanceSectionProps {
@@ -106,6 +106,8 @@ export function BalanceSection({ members, movements, obligations, payments, grou
   }
 
   const memberSummaries = summarizeMemberObligations(members, obligations);
+  const netBalances = calculateNetMemberBalances(members, movements, payments);
+  const settlementPlan = suggestMinimumTransfers(netBalances);
 
   return (
     <section className="mt-8" aria-labelledby="balance-title">
@@ -122,6 +124,50 @@ export function BalanceSection({ members, movements, obligations, payments, grou
           <p className="mt-2 text-xl font-bold tabular-nums">{formatARS(owed)}</p>
         </div>
       </div>
+
+      <section className="mt-6 rounded-[28px] border border-[#d7d4ff] bg-[#f7f6ff] p-5" aria-labelledby="net-balance-title">
+        <h2 id="net-balance-title" className="font-bold tracking-[-0.02em]">Saldo neto del grupo</h2>
+        <p className="mt-1 text-xs leading-5 text-[#5d5d5d]">
+          Propuesta orientativa; no cambia las deudas por gasto ni registra pagos.
+        </p>
+        <div className="mt-4 space-y-2">
+          {netBalances.map(({ memberId, amount }) => {
+            const member = members.find((item) => item.id === memberId);
+            return (
+              <div key={memberId} className="flex items-center justify-between gap-3 text-sm">
+                <span className="font-semibold">{member?.name ?? 'Integrante'}</span>
+                <span className={`font-bold tabular-nums ${amount > 0 ? 'text-[#247446]' : amount < 0 ? 'text-[#b42318]' : 'text-[#5d5d5d]'}`}>
+                  {amount > 0 ? `A favor ${formatARS(amount)}` : amount < 0 ? `Debe ${formatARS(Math.abs(amount))}` : 'Al día'}
+                </span>
+              </div>
+            );
+          })}
+        </div>
+        <h3 className="mt-5 text-sm font-bold">Menos pagos posibles</h3>
+        {!settlementPlan.supported && (
+          <p className="mt-2 text-xs leading-5 text-[#5d5d5d]">
+            {settlementPlan.reason === 'group_too_large'
+              ? 'La sugerencia exacta está disponible para grupos de hasta 8 integrantes.'
+              : 'No pudimos calcular la sugerencia con los saldos actuales. Revisá los movimientos del grupo.'}
+          </p>
+        )}
+        {settlementPlan.supported && settlementPlan.transfers.length === 0 && (
+          <p className="mt-2 text-xs leading-5 text-[#5d5d5d]">El grupo está al día.</p>
+        )}
+        {settlementPlan.transfers.length > 0 && (
+          <ul className="mt-2 space-y-2">
+            {settlementPlan.transfers.map((transfer, index) => (
+              <li key={`${transfer.from}:${transfer.to}:${index}`} className="rounded-2xl bg-white px-3 py-2 text-sm">
+                <span className="font-semibold">{members.find((member) => member.id === transfer.from)?.name ?? 'Integrante'}</span>
+                {' paga '}
+                <span className="font-semibold">{members.find((member) => member.id === transfer.to)?.name ?? 'integrante'}</span>
+                {' '}
+                <span className="font-bold tabular-nums">{formatARS(transfer.amount)}</span>
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
 
       <section className="mt-7 rounded-[30px] bg-[#f6f6f6] p-5" aria-labelledby="obligations-title">
         <div className="flex items-center gap-3">

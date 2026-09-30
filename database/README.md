@@ -13,16 +13,20 @@ VITE_SUPABASE_ANON_KEY=tu-anon-key
 
 También podés copiar `.env.example` como base.
 
-## Paso 3: Ejecutar el schema
+## Paso 3: Crear las tablas base
 1. Ve al **SQL Editor** en el dashboard de Supabase
 2. Copia y pega todo el contenido de `database/schema.sql`
 3. Haz clic en **Run**
 
-Si el proyecto de Supabase ya tenía el schema anterior, ejecutá también `supabase/migrations/20260929224821_add_group_join_codes.sql` en el SQL Editor para agregar los códigos reutilizables de grupo.
+## Paso 4: Aplicar migraciones pendientes
 
-Para habilitar los avisos de pago con confirmación del destinatario, ejecutá `supabase/migrations/20260929234149_add_payment_confirmation_notifications.sql`, `supabase/migrations/20260929234356_index_settlement_foreign_keys.sql`, `supabase/migrations/20260929234451_preserve_payment_audit_users.sql` y `supabase/migrations/20260929234634_enforce_payment_resolution_audit.sql`.
+En un proyecto nuevo creado desde `database/schema.sql`, ejecutá también `supabase/migrations/20260930160051_add_private_income_and_division_methods.sql` para habilitar ingresos privados, métodos de división y sincronización Realtime.
 
-## Paso 4: Configurar Auth
+Si el proyecto ya tiene datos, aplicá las migraciones de `supabase/migrations/` que todavía no figuren en su historial, en orden por nombre. No vuelvas a ejecutar migraciones ya aplicadas.
+
+La función de reparto proporcional devuelve solo los importes asignados. Las fotos de tickets se procesan en el navegador y no se guardan en Supabase.
+
+## Paso 5: Configurar Auth
 1. En Supabase abrí **Authentication → Providers → Email**.
 2. Activá Email/Password.
 3. Desactivá **Confirm email** para que el registro sea inmediato en esta versión académica.
@@ -37,7 +41,7 @@ La aplicación implementa:
 - Validaciones del request con Zod.
 - Sesión SSR mediante cookies y refresh automático.
 
-## Paso 5: Iniciar la app
+## Paso 6: Iniciar la app
 ```bash
 npm run dev
 ```

@@ -96,6 +96,33 @@ export const invitationTokenSchema = z.object({
 
 const movementKind = z.enum(['expense', 'loan']);
 const movementCategory = z.enum(['Alquiler', 'Comida', 'Transporte', 'Compras', 'Otros', 'Préstamo']);
+const divisionMethod = z.enum(['equal', 'consumption', 'income']);
+
+export const profileIncomeSchema = z.object({
+  income: z.number().finite().positive().max(999999999999.99).nullable(),
+}).strict().superRefine((values, context) => {
+  if (values.income !== null && toCurrencyCents(values.income) < 1) {
+    context.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ['income'],
+      message: 'El ingreso mensual mínimo es $0,01.',
+    });
+  }
+});
+
+export const incomeSplitPreviewSchema = z.object({
+  groupId: uuid,
+  amount: z.number().finite().positive().max(999999999999.99),
+  participants: z.array(uuid).min(1).max(100).refine((values) => new Set(values).size === values.length, 'No repitas participantes.'),
+}).superRefine((values, context) => {
+  if (toCurrencyCents(values.amount) < values.participants.length) {
+    context.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ['amount'],
+      message: 'El importe debe alcanzar para asignar al menos un centavo a cada participante.',
+    });
+  }
+});
 
 export const createMovementSchema = z
   .object({
@@ -112,12 +139,14 @@ export const createMovementSchema = z
       .positive('El importe debe ser mayor a cero.')
       .max(999999999999.99, 'El importe es demasiado grande.'),
     category: movementCategory,
+    divisionMethod: divisionMethod.optional(),
     paidBy: uuid,
     recipient: uuid.optional().nullable(),
     participants: z
       .array(uuid)
       .max(100, 'Un gasto no puede tener más de 100 participantes.')
       .refine((values) => new Set(values).size === values.length, 'No repitas participantes.'),
+    participantShares: z.record(uuid, z.number().finite().positive().max(999999999999.99)).optional(),
   })
   .superRefine((values, context) => {
     const amountCents = toCurrencyCents(values.amount);
@@ -162,6 +191,7 @@ export const createMovementSchema = z
     }
 
     if (values.kind === 'expense') {
+      const method = values.divisionMethod ?? 'equal';
       if (values.category === 'Préstamo') {
         context.addIssue({
           code: z.ZodIssueCode.custom,
@@ -178,7 +208,7 @@ export const createMovementSchema = z
         });
       }
 
-      if (amountCents < values.participants.length) {
+      if (method === 'equal' && amountCents < values.participants.length) {
         context.addIssue({
           code: z.ZodIssueCode.custom,
           path: ['amount'],
@@ -191,6 +221,34 @@ export const createMovementSchema = z
           code: z.ZodIssueCode.custom,
           path: ['recipient'],
           message: 'Un gasto no puede tener receptor individual.',
+        });
+      }
+
+      if (method === 'consumption') {
+        const participantIds = new Set(values.participants);
+        const shareIds = Object.keys(values.participantShares ?? {});
+        const shareTotalCents = shareIds.reduce(
+          (sum, memberId) => sum + toCurrencyCents(values.participantShares?.[memberId] ?? 0),
+          0,
+        );
+        if (shareIds.length !== participantIds.size || shareIds.some((memberId) => !participantIds.has(memberId))) {
+          context.addIssue({
+            code: z.ZodIssueCode.custom,
+            path: ['participantShares'],
+            message: 'Ingresá la parte de cada persona seleccionada.',
+          });
+        } else if (shareTotalCents !== amountCents) {
+          context.addIssue({
+            code: z.ZodIssueCode.custom,
+            path: ['participantShares'],
+            message: 'Las partes deben sumar exactamente el importe total.',
+          });
+        }
+      } else if (values.participantShares) {
+        context.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ['participantShares'],
+          message: 'Este método calcula las partes automáticamente.',
         });
       }
     }

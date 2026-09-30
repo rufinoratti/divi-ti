@@ -1,10 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { z } from 'zod';
 
 import { createMovementSchema, groupIdQuerySchema } from '@/lib/api/schemas';
-import { roundCurrency, splitAmountEqually } from '@/lib/ledger';
+import { roundCurrency, splitAmountEquallyByMemberId } from '@/lib/ledger';
 import {
   authErrorResponse,
   configurationErrorResponse,
+  errorResponse,
   internalErrorResponse,
   readJson,
   validationResponse,
@@ -24,6 +26,7 @@ type DatabaseMovement = {
   monto: number;
   moneda: string;
   categoria: string;
+  division_method: 'equal' | 'consumption' | 'income' | null;
   pagado_por: string;
   receptor: string | null;
   creado_en: string;
@@ -40,6 +43,7 @@ function mapMovement(movement: DatabaseMovement) {
     paidBy: movement.pagado_por,
     recipient: movement.receptor ?? undefined,
     category: movement.categoria,
+    divisionMethod: movement.division_method ?? undefined,
     participants: participants.map((item) => item.miembro_id),
     participantShares: Object.fromEntries(
       participants.map((item) => [item.miembro_id, Number(item.monto_parte)]),
@@ -69,7 +73,7 @@ export async function GET(request: NextRequest) {
       for (let offset = 0; ; offset += 1000) {
         let movementQuery = supabase
           .from('movimientos')
-          .select('id, grupo_id, tipo, descripcion, monto, moneda, categoria, pagado_por, receptor, creado_en, movimiento_participantes(miembro_id, monto_parte)');
+          .select('id, grupo_id, tipo, descripcion, monto, moneda, categoria, division_method, pagado_por, receptor, creado_en, movimiento_participantes(miembro_id, monto_parte)');
         if (groupId) movementQuery = movementQuery.eq('grupo_id', groupId);
 
         const { data, error } = await movementQuery
@@ -113,6 +117,42 @@ export async function POST(request: NextRequest) {
     const { data: userData, error: userError } = await supabase.auth.getUser();
     if (userError || !userData.user) return authErrorResponse(userError, 401, 'Necesitás iniciar sesión.');
 
+    let participantShares: Record<string, number> | null = null;
+    if (parsed.data.kind === 'expense') {
+      const method = parsed.data.divisionMethod ?? 'equal';
+      if (method === 'equal') {
+        participantShares = splitAmountEquallyByMemberId(parsed.data.amount, parsed.data.participants);
+      } else if (method === 'consumption') {
+        participantShares = parsed.data.participantShares ?? null;
+      } else {
+        const { data: incomeShares, error: incomeError } = await supabase.rpc('previsualizar_division_por_ingresos', {
+          p_grupo_id: parsed.data.groupId,
+          p_monto: parsed.data.amount,
+          p_miembros: parsed.data.participants,
+        });
+        if (incomeError) {
+          if (incomeError.message.includes('INCOME_REQUIRED_FOR_EACH_PARTICIPANT')) {
+            return errorResponse(
+              'INCOME_REQUIRED',
+              'Todas las personas seleccionadas deben tener un ingreso mensual cargado en su cuenta para usar este reparto.',
+              422,
+            );
+          }
+          if (incomeError.message.includes('GROUP_MEMBERSHIP_REQUIRED') || incomeError.message.includes('INCOME_SPLIT_MEMBER_OUTSIDE_GROUP')) {
+            return errorResponse('GROUP_ACCESS_DENIED', 'No tenés acceso a ese grupo o a sus integrantes.', 403);
+          }
+          return internalErrorResponse();
+        }
+        participantShares = Object.fromEntries(
+          ((incomeShares ?? []) as Array<{ miembro_id: string; monto_parte: number | string }>)
+            .map((share) => [share.miembro_id, Number(share.monto_parte)]),
+        );
+      }
+      if (!participantShares || Object.keys(participantShares).length !== parsed.data.participants.length) {
+        return errorResponse('INVALID_SPLIT', 'No se pudo calcular el reparto del gasto.', 400);
+      }
+    }
+
     const movementPayload = {
       grupo_id: parsed.data.groupId,
       tipo: parsed.data.kind === 'loan' ? 'prestamo' : 'gasto',
@@ -120,6 +160,7 @@ export async function POST(request: NextRequest) {
       monto: roundCurrency(parsed.data.amount),
       moneda: 'ARS',
       categoria: parsed.data.kind === 'loan' ? 'Préstamo' : parsed.data.category,
+      division_method: parsed.data.kind === 'loan' ? null : parsed.data.divisionMethod ?? 'equal',
       pagado_por: parsed.data.paidBy,
       receptor: parsed.data.kind === 'loan' ? parsed.data.recipient : null,
     };
@@ -132,12 +173,11 @@ export async function POST(request: NextRequest) {
     if (movementError || !movement) return internalErrorResponse();
 
     if (parsed.data.kind === 'expense') {
-      const shares = splitAmountEqually(movementPayload.monto, parsed.data.participants.length);
-      const participantRows = parsed.data.participants.map((memberId, index) => ({
+      const participantRows = parsed.data.participants.map((memberId) => ({
         movimiento_id: movement.id,
         grupo_id: parsed.data.groupId,
         miembro_id: memberId,
-        monto_parte: shares[index],
+        monto_parte: participantShares?.[memberId] ?? 0,
       }));
 
       const { error: participantsError } = await supabase
@@ -152,12 +192,83 @@ export async function POST(request: NextRequest) {
 
     const { data: completeMovement, error: completeMovementError } = await supabase
       .from('movimientos')
-      .select('id, grupo_id, tipo, descripcion, monto, moneda, categoria, pagado_por, receptor, creado_en, movimiento_participantes(miembro_id, monto_parte)')
+      .select('id, grupo_id, tipo, descripcion, monto, moneda, categoria, division_method, pagado_por, receptor, creado_en, movimiento_participantes(miembro_id, monto_parte)')
       .eq('id', movement.id)
       .single();
     if (completeMovementError || !completeMovement) return internalErrorResponse();
 
     const response = NextResponse.json({ movement: mapMovement(completeMovement as DatabaseMovement) }, { status: 201 });
+    response.headers.set('Cache-Control', 'private, no-store');
+    applyCookies(response);
+    return response;
+  } catch (error) {
+    if (error instanceof Error && error.message.startsWith('Supabase no está configurado')) {
+      return configurationErrorResponse();
+    }
+    return internalErrorResponse();
+  }
+}
+
+const movementIdSchema = z.string().uuid();
+
+export async function PATCH(request: NextRequest) {
+  const body = await readJson(request);
+  if ('response' in body) return body.response;
+
+  const movementId = typeof body.data === 'object' && body.data !== null && 'movementId' in body.data
+    ? movementIdSchema.safeParse(body.data.movementId)
+    : null;
+  if (!movementId?.success) {
+    return errorResponse('VALIDATION_ERROR', 'El movimiento que querés editar no es válido.', 400);
+  }
+
+  const parsed = createMovementSchema.safeParse(body.data);
+  if (!parsed.success) return validationResponse(parsed.error);
+
+  try {
+    const { supabase, applyCookies } = createSupabaseRouteClient(request);
+    const { data: userData, error: userError } = await supabase.auth.getUser();
+    if (userError || !userData.user) return authErrorResponse(userError, 401, 'Necesitás iniciar sesión.');
+
+    const { error: updateError } = await supabase.rpc('actualizar_movimiento', {
+      p_movimiento_id: movementId.data,
+      p_grupo_id: parsed.data.groupId,
+      p_tipo: parsed.data.kind === 'loan' ? 'prestamo' : 'gasto',
+      p_descripcion: parsed.data.description,
+      p_monto: roundCurrency(parsed.data.amount),
+      p_categoria: parsed.data.kind === 'loan' ? 'Préstamo' : parsed.data.category,
+      p_division_method: parsed.data.kind === 'loan' ? null : parsed.data.divisionMethod ?? 'equal',
+      p_pagado_por: parsed.data.paidBy,
+      p_receptor: parsed.data.kind === 'loan' ? parsed.data.recipient ?? null : null,
+      p_participantes: parsed.data.kind === 'loan' ? [] : parsed.data.participants,
+      p_partes: parsed.data.kind === 'expense' && parsed.data.divisionMethod === 'consumption'
+        ? parsed.data.participantShares ?? {}
+        : {},
+    });
+    if (updateError) {
+      if (updateError.message.includes('MOVEMENT_HAS_PAYMENT')) {
+        return errorResponse('MOVEMENT_LOCKED', 'No se puede editar un movimiento con pagos reportados o confirmados.', 409);
+      }
+      if (updateError.message.includes('GROUP_MEMBERSHIP_REQUIRED')) {
+        return errorResponse('GROUP_ACCESS_DENIED', 'No tenés acceso a ese grupo.', 403);
+      }
+      if (updateError.message.includes('INCOME_REQUIRED_FOR_EACH_PARTICIPANT')) {
+        return errorResponse('INCOME_REQUIRED', 'Todas las personas seleccionadas deben tener un ingreso mensual cargado en su cuenta.', 422);
+      }
+      if (updateError.message.includes('MOVEMENT_NOT_FOUND')) {
+        return errorResponse('MOVEMENT_NOT_FOUND', 'No encontramos el movimiento en este grupo.', 404);
+      }
+      return internalErrorResponse();
+    }
+
+    const { data: updatedMovement, error: fetchError } = await supabase
+      .from('movimientos')
+      .select('id, grupo_id, tipo, descripcion, monto, moneda, categoria, division_method, pagado_por, receptor, creado_en, movimiento_participantes(miembro_id, monto_parte)')
+      .eq('id', movementId.data)
+      .single();
+    if (fetchError || !updatedMovement) return internalErrorResponse();
+
+    const response = NextResponse.json({ movement: mapMovement(updatedMovement as DatabaseMovement) });
     response.headers.set('Cache-Control', 'private, no-store');
     applyCookies(response);
     return response;
