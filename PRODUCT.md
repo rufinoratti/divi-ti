@@ -32,12 +32,12 @@ La interfaz es web adaptable a móviles y cuenta con un manifiesto PWA. El uso s
 - Invitaciones por email mediante un enlace que la persona invitada acepta al iniciar sesión.
 - Varias vistas de grupo: Inicio, Actividad, Balance y Perfil.
 - Alta manual de gastos grupales con selección de participantes y préstamos 1 a 1.
-- Deudas detalladas por gasto y persona, con montos pendientes de confirmación.
+- Deudas detalladas por gasto y persona, con importes exactos hasta centavos.
 - Persistencia en Supabase, con acceso protegido por sesión y políticas RLS.
 - Selector de grupo para cuentas que participan en más de un grupo; conserva la selección en el dispositivo.
 - Vista general de todos los grupos, con actividad conjunta, balances separados por grupo y perfil de cuenta.
 - Creación de grupos adicionales desde el perfil.
-- Avisos de pago entre integrantes, con confirmación o rechazo, notificaciones en la app e historial trazable.
+- Avisos de pago total o parcial, atajos para informar la deuda completa, confirmación o rechazo desde Inicio y Balance, notificaciones e historial trazable.
 
 Todavía no se pueden cargar ítems del ticket ni editar movimientos.
 

@@ -1,9 +1,10 @@
 'use client';
 
 import { useState } from 'react';
-import { ArrowUpRightIcon, CheckIcon, Clock3Icon, WalletIcon, XIcon } from 'lucide-react';
+import { ArrowUpRightIcon, Clock3Icon, WalletIcon, XIcon } from 'lucide-react';
 
 import { Avatar } from '@/components/layout/Avatar';
+import { PaymentConfirmationActions } from '@/components/features/PaymentActions';
 import {
   Dialog,
   DialogClose,
@@ -12,7 +13,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import { type LedgerMovement, type Member, type MovementObligation, type SettlementPayment, summarizeMemberObligations } from '@/lib/ledger';
+import { roundCurrency, toCurrencyCents, type LedgerMovement, type Member, type MovementObligation, type SettlementPayment, summarizeMemberObligations } from '@/lib/ledger';
 import { formatARS } from '@/lib/utils';
 
 interface BalanceSectionProps {
@@ -39,8 +40,6 @@ export function BalanceSection({ members, movements, obligations, payments, grou
   const [paymentDialogOpen, setPaymentDialogOpen] = useState(false);
   const [paymentAmount, setPaymentAmount] = useState('');
   const [submitting, setSubmitting] = useState(false);
-  const [resolvingPaymentId, setResolvingPaymentId] = useState<string | null>(null);
-  const [paymentResolutionError, setPaymentResolutionError] = useState<{ paymentId: string; message: string } | null>(null);
   const [error, setError] = useState('');
   const currentObligations = obligations.filter((obligation) => (
     obligation.remainingAmount > 0
@@ -66,8 +65,13 @@ export function BalanceSection({ members, movements, obligations, payments, grou
     setPaymentDialogOpen(true);
   }
 
-  async function reportPayment() {
-    if (!selectedObligation || !hasValidPaymentAmount) return;
+  async function reportPayment(amount: number) {
+    if (
+      !selectedObligation
+      || !Number.isFinite(amount)
+      || toCurrencyCents(amount) <= 0
+      || toCurrencyCents(amount) > toCurrencyCents(selectedObligation.availableAmount)
+    ) return;
     setSubmitting(true);
     setError('');
 
@@ -80,7 +84,7 @@ export function BalanceSection({ members, movements, obligations, payments, grou
           movementId: selectedObligation.movementId,
           fromMemberId: selectedObligation.from,
           toMemberId: selectedObligation.to,
-          amount: parsedPaymentAmount,
+          amount: roundCurrency(amount),
         }),
       });
       const data = await response.json() as { error?: { message?: string } | string };
@@ -98,39 +102,6 @@ export function BalanceSection({ members, movements, obligations, payments, grou
       setError('No pudimos conectarnos con Divi. Revisá tu conexión e intentá de nuevo.');
     } finally {
       setSubmitting(false);
-    }
-  }
-
-  async function respondToPayment(paymentId: string, action: 'confirm' | 'reject') {
-    if (resolvingPaymentId) return;
-    setResolvingPaymentId(paymentId);
-    setPaymentResolutionError(null);
-
-    try {
-      const response = await fetch('/api/settlements', {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ settlementId: paymentId, action }),
-      });
-      const data = await response.json() as { error?: { message?: string } | string };
-
-      if (!response.ok) {
-        const message = typeof data.error === 'string' ? data.error : data.error?.message;
-        setPaymentResolutionError({
-          paymentId,
-          message: message ?? 'No pudimos guardar tu respuesta. Intentá de nuevo.',
-        });
-        return;
-      }
-
-      onPaymentChanged();
-    } catch {
-      setPaymentResolutionError({
-        paymentId,
-        message: 'No pudimos conectarnos con Divi. Revisá tu conexión e intentá de nuevo.',
-      });
-    } finally {
-      setResolvingPaymentId(null);
     }
   }
 
@@ -171,6 +142,8 @@ export function BalanceSection({ members, movements, obligations, payments, grou
           {currentObligations.map((obligation) => {
             const debtor = members.find((member) => member.id === obligation.from);
             const creditor = members.find((member) => member.id === obligation.to);
+            const movement = movements.find((item) => item.id === obligation.movementId);
+            const participantCount = movement?.participants.length || members.length;
             const isOwing = obligation.from === currentMemberId;
             const pendingPayment = payments.find((payment) => (
               payment.movementId === obligation.movementId
@@ -194,48 +167,42 @@ export function BalanceSection({ members, movements, obligations, payments, grou
                   </div>
                   <div className="shrink-0 text-right">
                     <p className="text-sm font-bold tabular-nums">{formatARS(obligation.remainingAmount)}</p>
-                    <p className="mt-1 text-[11px] text-[#777777]">pendiente</p>
+                    <p className="mt-1 text-[11px] text-[#777777]">{isOwing ? 'saldo por pagar' : 'saldo por cobrar'}</p>
                   </div>
+                </div>
+
+                <div className="mt-3 space-y-1 text-xs leading-5 text-[#5d5d5d]">
+                  {movement?.kind === 'expense' ? (
+                    <p>Total del gasto: {formatARS(movement.amount)} · lo pagó {creditor?.name ?? 'un integrante'} · dividido entre {participantCount}</p>
+                  ) : movement ? (
+                    <p>Préstamo de {formatARS(movement.amount)} · lo hizo {creditor?.name ?? 'un integrante'}</p>
+                  ) : null}
+                  {movement?.kind === 'expense' && (
+                    <p>{isOwing ? 'Tu parte original' : `Parte de ${debtor?.name ?? 'un integrante'}`}: {formatARS(obligation.amount)}</p>
+                  )}
+                  {movement?.kind === 'loan' && <p>Deuda original: {formatARS(obligation.amount)}</p>}
+                  {obligation.confirmedAmount > 0 && (
+                    <p>{isOwing ? 'Ya pagaste' : 'Ya recibiste'} y confirmaste: {formatARS(obligation.confirmedAmount)}</p>
+                  )}
                 </div>
 
                 {pendingPayment && isOwing && (
                   <p className="mt-3 inline-flex items-start gap-1.5 text-xs font-semibold leading-5 text-[#8a5a00]">
                     <Clock3Icon aria-hidden="true" className="mt-0.5 shrink-0" size={14} />
-                    {`Avisaste que vas a pagar ${formatARS(pendingPayment.amount)}. Falta que ${creditor?.name ?? 'la otra persona'} confirme que lo recibió.`}
+                    <span>
+                      Avisaste {formatARS(pendingPayment.amount)} · falta que {creditor?.name ?? 'la otra persona'} confirme.
+                      {' '}{`Si confirma, te quedarán ${formatARS(roundCurrency(Math.max(0, obligation.remainingAmount - pendingPayment.amount)))} por pagar.`}
+                    </span>
                   </p>
                 )}
 
                 {pendingPayment && !isOwing && (
-                  <div className="mt-3 rounded-2xl bg-[#fff8e7] p-3">
-                    <p className="text-xs font-semibold leading-5 text-[#8a5a00]">
-                      {`${debtor?.name ?? 'La otra persona'} avisó un pago de ${formatARS(pendingPayment.amount)} por ${obligation.description}. ¿Confirmás que lo recibiste?`}
-                    </p>
-                    {paymentResolutionError?.paymentId === pendingPayment.id && (
-                      <p role="alert" className="mt-2 text-xs font-medium leading-5 text-[#b42318]">
-                        {paymentResolutionError.message}
-                      </p>
-                    )}
-                    <div className="mt-3 grid grid-cols-2 gap-2">
-                      <button
-                        type="button"
-                        disabled={resolvingPaymentId !== null}
-                        onClick={() => { void respondToPayment(pendingPayment.id, 'reject'); }}
-                        className="inline-flex min-h-10 items-center justify-center gap-1 rounded-full border border-[#e7e7e7] bg-white px-2 text-xs font-bold text-[#5d5d5d] transition hover:bg-[#f6f6f6] disabled:cursor-wait disabled:opacity-50"
-                      >
-                        <XIcon aria-hidden="true" size={14} />
-                        No lo recibí
-                      </button>
-                      <button
-                        type="button"
-                        disabled={resolvingPaymentId !== null}
-                        onClick={() => { void respondToPayment(pendingPayment.id, 'confirm'); }}
-                        className="inline-flex min-h-10 items-center justify-center gap-1 rounded-full bg-[#594ff4] px-2 text-xs font-bold text-white transition hover:bg-[#4c42e8] disabled:cursor-wait disabled:opacity-50"
-                      >
-                        <CheckIcon aria-hidden="true" size={14} />
-                        {resolvingPaymentId === pendingPayment.id ? 'Guardando…' : 'Sí, lo recibí'}
-                      </button>
-                    </div>
-                  </div>
+                  <PaymentConfirmationActions
+                    payment={pendingPayment}
+                    obligation={obligation}
+                    debtorName={debtor?.name ?? 'La otra persona'}
+                    onResolved={onPaymentChanged}
+                  />
                 )}
 
                 {canPay && (
@@ -279,11 +246,25 @@ export function BalanceSection({ members, movements, obligations, payments, grou
           <DialogHeader>
             <DialogTitle className="text-2xl font-bold tracking-[-0.04em]">Avisar un pago</DialogTitle>
             <DialogDescription className="mt-2 leading-6 text-[#5d5d5d]">
-              {selectedObligation && `Por ${selectedObligation.description} a ${members.find((member) => member.id === selectedObligation.to)?.name ?? 'un integrante'}. Indicá cuánto vas a pagar; la otra persona confirma cuando lo reciba.`}
+              {selectedObligation && `Por ${selectedObligation.description} a ${members.find((member) => member.id === selectedObligation.to)?.name ?? 'un integrante'}. Divi no transfiere plata: avisamos el importe y la otra persona confirma cuando lo recibe.`}
             </DialogDescription>
           </DialogHeader>
 
           <div className="mt-2 space-y-4">
+            {selectedObligation && selectedObligation.availableAmount > 0 && (
+              <button
+                type="button"
+                disabled={submitting}
+                onClick={() => { void reportPayment(selectedObligation.availableAmount); }}
+                className="inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-full bg-[#594ff4] px-5 text-sm font-bold text-white transition hover:bg-[#4c42e8] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#594ff4] focus-visible:ring-offset-2 disabled:cursor-wait disabled:opacity-50"
+              >
+                <WalletIcon aria-hidden="true" size={17} />
+                {submitting ? 'Enviando aviso…' : `Pagar todo y avisar ${formatARS(selectedObligation.availableAmount)}`}
+              </button>
+            )}
+
+            <p className="text-center text-xs font-semibold text-[#777777]">O avisá un pago parcial</p>
+
             <label className="block space-y-2">
               <span className="text-sm font-bold">¿Cuánto vas a pagar?</span>
               <span className="relative block">
@@ -314,11 +295,11 @@ export function BalanceSection({ members, movements, obligations, payments, grou
             <button
               type="button"
               disabled={!hasValidPaymentAmount || submitting}
-              onClick={() => { void reportPayment(); }}
-              className="inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-full bg-[#594ff4] px-5 text-sm font-bold text-white transition hover:bg-[#4c42e8] disabled:cursor-not-allowed disabled:opacity-50"
+              onClick={() => { void reportPayment(parsedPaymentAmount); }}
+              className="inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-full border border-[#594ff4] bg-white px-5 text-sm font-bold text-[#594ff4] transition hover:bg-[#f1f0ff] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#594ff4] focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
             >
               <WalletIcon aria-hidden="true" size={17} />
-              {submitting ? 'Enviando aviso…' : 'Avisar pago'}
+              {submitting ? 'Enviando aviso…' : 'Avisar este importe'}
             </button>
           </div>
         </DialogContent>

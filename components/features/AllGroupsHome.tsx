@@ -4,12 +4,14 @@ import { ChevronRightIcon, UsersRoundIcon } from 'lucide-react';
 
 import { CreateGroupDialog } from '@/components/features/CreateGroupDialog';
 import { JoinGroupDialog } from '@/components/features/JoinGroupDialog';
+import { PendingPaymentsSection } from '@/components/features/PaymentActions';
 import { summarizeMemberObligations, type GroupLedger } from '@/lib/ledger';
 import { formatARS } from '@/lib/utils';
 
 interface AllGroupsHomeProps {
   groups: GroupLedger[];
   onOpenGroup: (groupId: string) => void;
+  onPaymentChanged: () => void;
 }
 
 function groupBalanceLines(owes: number, owed: number) {
@@ -19,11 +21,13 @@ function groupBalanceLines(owes: number, owed: number) {
   return lines.length ? lines : [{ label: 'Al día', amount: formatARS(0), className: 'text-[#5d5d5d]' }];
 }
 
-export function AllGroupsHome({ groups, onOpenGroup }: AllGroupsHomeProps) {
+export function AllGroupsHome({ groups, onOpenGroup, onPaymentChanged }: AllGroupsHomeProps) {
   return (
     <section className="mt-8" aria-labelledby="my-groups-title">
       <h1 id="my-groups-title" className="text-3xl font-bold tracking-[-0.045em]">Mis grupos</h1>
       <p className="mt-2 text-sm leading-6 text-[#5d5d5d]">Entrá a un grupo para ver sus gastos y saldos.</p>
+
+      <PendingPaymentsSection className="mt-6" groups={groups} onPaymentChanged={onPaymentChanged} />
 
       <div className="mt-7 space-y-3">
         {groups.map((group) => {

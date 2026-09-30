@@ -11,6 +11,7 @@ import { ActivitySection } from '@/components/features/ActivitySection';
 import { ProfileSection } from '@/components/features/ProfileSection';
 import { AllGroupsHome } from '@/components/features/AllGroupsHome';
 import { AllGroupsBalanceSection } from '@/components/features/AllGroupsBalanceSection';
+import { PendingPaymentsSection } from '@/components/features/PaymentActions';
 import { AppLoading } from '@/components/layout/AppLoading';
 import { MovementList } from '@/components/layout/MovementList';
 import { useMovements, type Tab } from '@/hooks/useMovements';
@@ -116,6 +117,12 @@ export default function Home() {
   const currentOwed = currentMemberId
     ? obligations.filter((obligation) => obligation.to === currentMemberId).reduce((sum, obligation) => sum + obligation.remainingAmount, 0)
     : 0;
+  const currentOwingCount = currentMemberId
+    ? obligations.filter((obligation) => obligation.from === currentMemberId && obligation.remainingAmount > 0).length
+    : 0;
+  const currentOwedCount = currentMemberId
+    ? obligations.filter((obligation) => obligation.to === currentMemberId && obligation.remainingAmount > 0).length
+    : 0;
 
   function openGroup(groupId: string, tab: Tab = 'inicio') {
     selectGroup(groupId);
@@ -141,7 +148,7 @@ export default function Home() {
 
         {activeTab === 'inicio' && (
           allGroupsView ? (
-            <AllGroupsHome groups={groupLedgers} onOpenGroup={(nextGroupId) => openGroup(nextGroupId)} />
+            <AllGroupsHome groups={groupLedgers} onOpenGroup={(nextGroupId) => openGroup(nextGroupId)} onPaymentChanged={refresh} />
           ) : (
             <section className="mt-8 space-y-7" aria-labelledby="inicio-title">
               <div>
@@ -149,7 +156,8 @@ export default function Home() {
                 <h1 id="inicio-title" className="mt-1 text-3xl font-bold tracking-[-0.045em]">Tu resumen del grupo</h1>
               </div>
 
-              <BalanceCard currentOwing={currentOwing} currentOwed={currentOwed} totalExpenses={totalExpenses} memberCount={members.length} onViewBalance={() => setActiveTab('balance')} onAddMovement={() => setComposerOpen(true)} />
+              <PendingPaymentsSection groups={groupLedgers.filter((group) => group.id === groupId)} onPaymentChanged={refresh} />
+              <BalanceCard currentOwing={currentOwing} currentOwed={currentOwed} owingCount={currentOwingCount} owedCount={currentOwedCount} totalExpenses={totalExpenses} memberCount={members.length} onViewBalance={() => setActiveTab('balance')} onAddMovement={() => setComposerOpen(true)} />
 
               <section aria-labelledby="recent-title">
                 <div className="mb-4 flex items-end justify-between">
