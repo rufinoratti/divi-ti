@@ -33,6 +33,7 @@ export const groupJoinCodeSchema = z.object({
 
 export const createSettlementSchema = z.object({
   groupId: uuid,
+  movementId: uuid,
   fromMemberId: uuid,
   toMemberId: uuid,
   amount: z

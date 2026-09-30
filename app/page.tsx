@@ -48,7 +48,7 @@ export default function Home() {
     loadError,
     addMovement,
     refresh,
-    balances,
+    obligations,
     members,
     payments,
     currentMemberIds,
@@ -110,6 +110,12 @@ export default function Home() {
     initials: accountInitials || 'US',
   };
   const currentMember = members.find((member) => member.id === currentMemberId);
+  const currentOwing = currentMemberId
+    ? obligations.filter((obligation) => obligation.from === currentMemberId).reduce((sum, obligation) => sum + obligation.remainingAmount, 0)
+    : 0;
+  const currentOwed = currentMemberId
+    ? obligations.filter((obligation) => obligation.to === currentMemberId).reduce((sum, obligation) => sum + obligation.remainingAmount, 0)
+    : 0;
 
   function openGroup(groupId: string, tab: Tab = 'inicio') {
     selectGroup(groupId);
@@ -143,7 +149,7 @@ export default function Home() {
                 <h1 id="inicio-title" className="mt-1 text-3xl font-bold tracking-[-0.045em]">Tu resumen del grupo</h1>
               </div>
 
-              <BalanceCard currentBalance={balances[currentMemberId!] ?? 0} totalExpenses={totalExpenses} memberCount={members.length} onViewBalance={() => setActiveTab('balance')} onAddMovement={() => setComposerOpen(true)} />
+              <BalanceCard currentOwing={currentOwing} currentOwed={currentOwed} totalExpenses={totalExpenses} memberCount={members.length} onViewBalance={() => setActiveTab('balance')} onAddMovement={() => setComposerOpen(true)} />
 
               <section aria-labelledby="recent-title">
                 <div className="mb-4 flex items-end justify-between">
@@ -174,7 +180,8 @@ export default function Home() {
           ) : (
             <BalanceSection
               members={members}
-              balances={balances}
+              movements={movements}
+              obligations={obligations}
               payments={payments}
               groupId={groupId!}
               currentMemberId={currentMemberId!}

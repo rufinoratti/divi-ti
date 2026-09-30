@@ -12,18 +12,22 @@ interface AllGroupsBalanceSectionProps {
 
 export function AllGroupsBalanceSection({ groups, onOpenGroup }: AllGroupsBalanceSectionProps) {
   const totalOwed = groups.reduce((sum, group) => {
-    const balance = group.currentMemberId ? group.balances[group.currentMemberId] ?? 0 : 0;
-    return sum + Math.max(balance, 0);
+    if (!group.currentMemberId) return sum;
+    return sum + group.obligations
+      .filter((obligation) => obligation.to === group.currentMemberId)
+      .reduce((subtotal, obligation) => subtotal + obligation.remainingAmount, 0);
   }, 0);
   const totalOwing = groups.reduce((sum, group) => {
-    const balance = group.currentMemberId ? group.balances[group.currentMemberId] ?? 0 : 0;
-    return sum + Math.max(-balance, 0);
+    if (!group.currentMemberId) return sum;
+    return sum + group.obligations
+      .filter((obligation) => obligation.from === group.currentMemberId)
+      .reduce((subtotal, obligation) => subtotal + obligation.remainingAmount, 0);
   }, 0);
 
   return (
     <section className="mt-8" aria-labelledby="all-balances-title">
       <h1 id="all-balances-title" className="text-3xl font-bold tracking-[-0.045em]">Balance general</h1>
-      <p className="mt-2 text-sm leading-6 text-[#5d5d5d]">Cada grupo conserva su propio saldo; no mezclamos deudas entre grupos.</p>
+      <p className="mt-2 text-sm leading-6 text-[#5d5d5d]">Ves lo que debés y te deben en cada grupo, gasto por gasto.</p>
 
       <div className="mt-7 grid grid-cols-2 gap-3">
         <div className="rounded-[24px] bg-[#f6f6f6] p-4">
@@ -38,15 +42,24 @@ export function AllGroupsBalanceSection({ groups, onOpenGroup }: AllGroupsBalanc
 
       <div className="mt-6 space-y-3">
         {groups.map((group) => {
-          const balance = group.currentMemberId ? group.balances[group.currentMemberId] ?? 0 : 0;
-          const personalSettlements = group.settlements.filter((settlement) => (
-            settlement.from === group.currentMemberId || settlement.to === group.currentMemberId
+          const owes = group.currentMemberId
+            ? group.obligations
+              .filter((obligation) => obligation.from === group.currentMemberId)
+              .reduce((sum, obligation) => sum + obligation.remainingAmount, 0)
+            : 0;
+          const owed = group.currentMemberId
+            ? group.obligations
+              .filter((obligation) => obligation.to === group.currentMemberId)
+              .reduce((sum, obligation) => sum + obligation.remainingAmount, 0)
+            : 0;
+          const nextOwedByMe = group.obligations.find((obligation) => (
+            obligation.from === group.currentMemberId && obligation.remainingAmount > 0
           ));
-          const nextSettlement = personalSettlements[0];
-          const counterpartyId = nextSettlement
-            ? nextSettlement.from === group.currentMemberId ? nextSettlement.to : nextSettlement.from
-            : null;
-          const counterparty = group.members.find((member) => member.id === counterpartyId);
+          const nextOwedToMe = group.obligations.find((obligation) => (
+            obligation.to === group.currentMemberId && obligation.remainingAmount > 0
+          ));
+          const fromMember = group.members.find((member) => member.id === nextOwedByMe?.to);
+          const toMember = group.members.find((member) => member.id === nextOwedToMe?.from);
 
           return (
             <article key={group.id} className="rounded-[26px] border border-[#e7e7e7] p-5">
@@ -54,17 +67,20 @@ export function AllGroupsBalanceSection({ groups, onOpenGroup }: AllGroupsBalanc
                 <div className="min-w-0">
                   <h2 className="truncate font-bold">{group.name}</h2>
                   <p className="mt-1 text-sm text-[#5d5d5d]">
-                    {balance < -0.01 ? 'Debés' : balance > 0.01 ? 'Te deben' : 'Al día'}
+                    {owes <= 0 && owed <= 0
+                      ? 'Al día'
+                      : [owes > 0 ? `Debés ${formatARS(owes)}` : '', owed > 0 ? `Te deben ${formatARS(owed)}` : ''].filter(Boolean).join(' · ')}
                   </p>
                 </div>
-                <p className={`shrink-0 text-sm font-bold tabular-nums ${balance < -0.01 ? 'text-[#b42318]' : balance > 0.01 ? 'text-[#247446]' : 'text-[#1f1f1f]'}`}>
-                  {formatARS(Math.abs(balance))}
-                </p>
               </div>
-              {nextSettlement && (
+              {nextOwedByMe && (
                 <p className="mt-3 text-xs leading-5 text-[#5d5d5d]">
-                  {nextSettlement.from === group.currentMemberId ? 'Te toca pagar a' : 'Te paga'}{' '}
-                  {counterparty?.name ?? 'un integrante'}: {formatARS(nextSettlement.amount)}
+                  Le debés a {fromMember?.name ?? 'un integrante'} {formatARS(nextOwedByMe.remainingAmount)} por {nextOwedByMe.description}
+                </p>
+              )}
+              {!nextOwedByMe && nextOwedToMe && (
+                <p className="mt-3 text-xs leading-5 text-[#5d5d5d]">
+                  {toMember?.name ?? 'Un integrante'} te debe {formatARS(nextOwedToMe.remainingAmount)} por {nextOwedToMe.description}
                 </p>
               )}
               <button

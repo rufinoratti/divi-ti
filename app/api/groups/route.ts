@@ -2,7 +2,6 @@ import { randomBytes } from 'node:crypto';
 import { NextRequest, NextResponse } from 'next/server';
 
 import { createGroupSchema } from '@/lib/api/schemas';
-import { calculateBalances, type LedgerMovement, type Member } from '@/lib/ledger';
 import {
   authErrorResponse,
   configurationErrorResponse,
@@ -29,37 +28,6 @@ type GroupRecord = {
   miembros: GroupMember[];
 };
 
-type DatabaseMovement = {
-  id: string;
-  grupo_id: string;
-  tipo: 'gasto' | 'prestamo';
-  descripcion: string;
-  monto: number | string;
-  categoria: string;
-  pagado_por: string;
-  receptor: string | null;
-  creado_en: string;
-  movimiento_participantes?: Array<{ miembro_id: string; monto_parte: number | string }>;
-};
-
-function mapGroupMovement(movement: DatabaseMovement): LedgerMovement {
-  const participants = movement.movimiento_participantes ?? [];
-  return {
-    id: movement.id,
-    kind: movement.tipo === 'prestamo' ? 'loan' : 'expense',
-    description: movement.descripcion,
-    amount: Number(movement.monto),
-    paidBy: movement.pagado_por,
-    recipient: movement.receptor ?? undefined,
-    category: movement.categoria as LedgerMovement['category'],
-    participants: participants.map((participant) => participant.miembro_id),
-    participantShares: Object.fromEntries(
-      participants.map((participant) => [participant.miembro_id, Number(participant.monto_parte)]),
-    ),
-    createdAt: movement.creado_en,
-  };
-}
-
 export async function GET(request: NextRequest) {
   try {
     const { supabase, applyCookies } = createSupabaseRouteClient(request);
@@ -84,46 +52,7 @@ export async function GET(request: NextRequest) {
       groups.push({ ...group, miembros: members ?? [] });
     }
 
-    const balancesByGroup = new Map<string, number>();
-    if (groups.length > 0) {
-      const { data: movementData, error: movementError } = await supabase
-        .from('movimientos')
-        .select('id, grupo_id, tipo, descripcion, monto, categoria, pagado_por, receptor, creado_en, movimiento_participantes(miembro_id, monto_parte)')
-        .in('grupo_id', groups.map((group) => group.id));
-
-      if (movementError) return internalErrorResponse();
-
-      const movementsByGroup = new Map<string, LedgerMovement[]>();
-      for (const rawMovement of movementData ?? []) {
-        const movement = rawMovement as DatabaseMovement;
-        const groupMovements = movementsByGroup.get(movement.grupo_id) ?? [];
-        groupMovements.push(mapGroupMovement(movement));
-        movementsByGroup.set(movement.grupo_id, groupMovements);
-      }
-
-      for (const group of groups) {
-        const currentMember = group.miembros.find((member) => member.usuario_id === userData.user.id);
-        if (!currentMember) {
-          balancesByGroup.set(group.id, 0);
-          continue;
-        }
-
-        const ledgerMembers: Member[] = group.miembros.map((member) => ({
-          id: member.id,
-          name: member.nombre,
-          initials: member.iniciales,
-        }));
-        const balances = calculateBalances(ledgerMembers, movementsByGroup.get(group.id) ?? []);
-        balancesByGroup.set(group.id, balances[currentMember.id] ?? 0);
-      }
-    }
-
-    const groupsWithBalances = groups.map((group) => ({
-      ...group,
-      balance_personal: balancesByGroup.get(group.id) ?? 0,
-    }));
-
-    const response = NextResponse.json({ groups: groupsWithBalances });
+    const response = NextResponse.json({ groups });
     response.headers.set('Cache-Control', 'private, no-store');
     applyCookies(response);
     return response;

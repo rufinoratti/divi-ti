@@ -834,6 +834,7 @@ create policy "El dueño puede eliminar participantes"
 create table if not exists public.liquidaciones (
   id uuid primary key default gen_random_uuid(),
   grupo_id uuid not null,
+  movimiento_id uuid,
   pagador_id uuid not null,
   receptor_id uuid not null,
   monto numeric(14, 2) not null check (monto > 0),
@@ -845,6 +846,8 @@ create table if not exists public.liquidaciones (
   resuelto_en timestamptz,
   constraint liquidaciones_grupo_id_fkey
     foreign key (grupo_id) references public.grupos(id) on delete cascade,
+  constraint liquidaciones_movimiento_grupo_fkey
+    foreign key (movimiento_id, grupo_id) references public.movimientos(id, grupo_id) on delete cascade,
   constraint liquidaciones_pagador_grupo_fkey
     foreign key (pagador_id, grupo_id) references public.miembros(id, grupo_id) on delete restrict,
   constraint liquidaciones_receptor_grupo_fkey
@@ -859,12 +862,17 @@ create table if not exists public.liquidaciones (
 create index if not exists liquidaciones_grupo_creado_en_idx
   on public.liquidaciones (grupo_id, creado_en desc);
 
-create unique index if not exists liquidaciones_pendientes_por_par_idx
-  on public.liquidaciones (grupo_id, pagador_id, receptor_id)
-  where estado = 'pendiente';
+create index if not exists liquidaciones_movimiento_integrantes_idx
+  on public.liquidaciones (movimiento_id, pagador_id, receptor_id, estado);
+
+create unique index if not exists liquidaciones_pendientes_por_movimiento_idx
+  on public.liquidaciones (movimiento_id, pagador_id, receptor_id)
+  where estado = 'pendiente' and movimiento_id is not null;
 
 comment on table public.liquidaciones is
   'Pagos informados entre integrantes; el balance cambia sólo cuando el receptor confirma.';
+comment on column public.liquidaciones.movimiento_id is
+  'Movimiento individual al que corresponde el pago informado.';
 
 create table if not exists public.notificaciones (
   id uuid primary key default gen_random_uuid(),
@@ -887,7 +895,7 @@ alter table public.notificaciones enable row level security;
 
 revoke all on table public.liquidaciones, public.notificaciones from public, anon, authenticated;
 grant select on table public.liquidaciones to authenticated;
-grant insert (grupo_id, pagador_id, receptor_id, monto, reportado_por)
+grant insert (grupo_id, movimiento_id, pagador_id, receptor_id, monto, reportado_por)
   on public.liquidaciones to authenticated;
 grant update (estado)
   on public.liquidaciones to authenticated;
@@ -905,7 +913,8 @@ create policy "Un integrante puede informar su pago"
   on public.liquidaciones for insert
   to authenticated
   with check (
-    reportado_por = (select auth.uid())
+    movimiento_id is not null
+    and reportado_por = (select auth.uid())
     and exists (
       select 1 from public.miembros pagador
       where pagador.id = liquidaciones.pagador_id
@@ -917,6 +926,30 @@ create policy "Un integrante puede informar su pago"
       where receptor.id = liquidaciones.receptor_id
         and receptor.grupo_id = liquidaciones.grupo_id
         and receptor.usuario_id is not null
+    )
+    and exists (
+      select 1
+      from public.movimientos movimiento
+      where movimiento.id = liquidaciones.movimiento_id
+        and movimiento.grupo_id = liquidaciones.grupo_id
+        and (
+          (
+            movimiento.tipo = 'gasto'
+            and movimiento.pagado_por = liquidaciones.receptor_id
+            and liquidaciones.pagador_id <> movimiento.pagado_por
+            and exists (
+              select 1 from public.movimiento_participantes participante
+              where participante.movimiento_id = movimiento.id
+                and participante.grupo_id = movimiento.grupo_id
+                and participante.miembro_id = liquidaciones.pagador_id
+            )
+          )
+          or (
+            movimiento.tipo = 'prestamo'
+            and movimiento.pagado_por = liquidaciones.receptor_id
+            and movimiento.receptor = liquidaciones.pagador_id
+          )
+        )
     )
   );
 

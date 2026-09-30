@@ -21,9 +21,9 @@ La interfaz es web adaptable a móviles y cuenta con un manifiesto PWA. El uso s
 - Un gasto se divide en partes iguales entre las personas seleccionadas; al empezar vienen seleccionados todos los integrantes.
 - El reparto asigna los centavos sobrantes de forma determinística para que las partes sumen el total.
 - Un préstamo es entre dos integrantes: quien presta queda a favor y quien recibe queda debiendo.
-- Los balances combinan gastos y préstamos; las propuestas de pago reducen la cantidad de transferencias.
-- Divi no mueve dinero: una persona puede informar un pago y la otra confirmarlo desde sus notificaciones.
-- Los pagos informados quedan pendientes y no cambian el balance hasta que quien los recibe confirma.
+- Cada gasto o préstamo deja una deuda vinculada a ese movimiento y a las personas involucradas; las deudas de distintos movimientos no se compensan.
+- Divi no mueve dinero: quien debe puede elegir a quién pagar y cuánto, y la otra persona confirma o rechaza el aviso desde sus notificaciones.
+- Cada pago informado queda vinculado a un gasto o préstamo, y no reduce esa deuda hasta que quien lo recibe confirma.
 
 ## Funcionalidad ya implementada
 
@@ -32,7 +32,7 @@ La interfaz es web adaptable a móviles y cuenta con un manifiesto PWA. El uso s
 - Invitaciones por email mediante un enlace que la persona invitada acepta al iniciar sesión.
 - Varias vistas de grupo: Inicio, Actividad, Balance y Perfil.
 - Alta manual de gastos grupales con selección de participantes y préstamos 1 a 1.
-- Balance neto por persona, sugerencias para saldar y filtro de actividad.
+- Deudas detalladas por gasto y persona, con montos pendientes de confirmación.
 - Persistencia en Supabase, con acceso protegido por sesión y políticas RLS.
 - Selector de grupo para cuentas que participan en más de un grupo; conserva la selección en el dispositivo.
 - Vista general de todos los grupos, con actividad conjunta, balances separados por grupo y perfil de cuenta.
@@ -69,7 +69,7 @@ Estas iteraciones son una propuesta de trabajo del equipo y se pueden ajustar al
 - Supabase Auth y PostgreSQL.
 - Esquema de datos en español: `perfiles`, `grupos`, `miembros`, `movimientos`, `movimiento_participantes`, `invitaciones`, `liquidaciones` y `notificaciones`.
 - Rutas de servidor para grupos, integrantes, movimientos, invitaciones y pagos; validación de requests con Zod.
-- Cálculo de balances y propuestas de pago en `lib/ledger.ts`.
+- Cálculo de deudas y pagos pendientes por movimiento en `lib/ledger.ts`.
 
 ## Desarrollo local
 
