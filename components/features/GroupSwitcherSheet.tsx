@@ -20,23 +20,24 @@ import { cn } from '@/lib/utils';
 
 interface GroupSwitcherSheetProps {
   groups: Array<{ id: string; name: string }>;
-  groupId: string;
+  groupId: string | null;
   groupName: string;
-  onGroupChange: (groupId: string) => void;
+  accountName: string;
+  onGroupChange: (groupId: string | null) => void;
 }
 
-export function GroupSwitcherSheet({ groups, groupId, groupName, onGroupChange }: GroupSwitcherSheetProps) {
+export function GroupSwitcherSheet({ groups, groupId, groupName, accountName, onGroupChange }: GroupSwitcherSheetProps) {
   const [open, setOpen] = useState(false);
 
   return (
     <Sheet open={open} onOpenChange={setOpen}>
       <SheetTrigger
         render={<Button variant="ghost" className="h-auto max-w-56 flex-col items-start rounded-lg p-0 text-left whitespace-normal hover:bg-transparent" />}
-        aria-label={`Grupo activo: ${groupName}. Abrir selector de grupos`}
+        aria-label={`${groupId ? `Grupo activo: ${groupName}` : 'Vista general de todos tus grupos'}. Abrir selector`}
       >
-        <span className="text-sm text-[#5d5d5d]">Grupo activo</span>
+        <span className="text-sm text-[#5d5d5d]">{groupId ? 'Grupo activo' : `Hola, ${accountName}`}</span>
         <span className="flex max-w-full items-center gap-1 text-base font-bold tracking-[-0.02em]">
-          <span className="truncate">{groupName}</span>
+          <span className="truncate">{groupId ? groupName : 'Todos tus grupos'}</span>
           <ChevronDownIcon aria-hidden="true" size={16} className="shrink-0 text-[#594ff4] transition-transform duration-200 group-data-[popup-open]:rotate-180" />
         </span>
       </SheetTrigger>
@@ -49,7 +50,7 @@ export function GroupSwitcherSheet({ groups, groupId, groupName, onGroupChange }
         <SheetHeader className="relative px-5 pb-4 pt-6 pr-16">
           <SheetTitle className="text-xl font-bold tracking-[-0.035em]">Tus grupos</SheetTitle>
           <SheetDescription className="leading-6 text-[#5d5d5d]">
-            Elegí el grupo que querés consultar.
+            Elegí un grupo o volvé a la vista general.
           </SheetDescription>
           <SheetClose
             aria-label="Cerrar"
@@ -61,6 +62,33 @@ export function GroupSwitcherSheet({ groups, groupId, groupName, onGroupChange }
 
         <div className="max-h-[48dvh] overflow-y-auto px-5 pb-3">
           <div className="flex flex-col gap-2">
+            <Button
+              type="button"
+              variant={groupId === null ? 'secondary' : 'outline'}
+              aria-pressed={groupId === null}
+              onClick={() => {
+                onGroupChange(null);
+                setOpen(false);
+              }}
+              className="h-auto min-h-[4.25rem] w-full justify-start gap-3 rounded-2xl px-3 py-2 text-left whitespace-normal"
+            >
+              <span className={cn(
+                'grid size-11 shrink-0 place-items-center rounded-2xl',
+                groupId === null ? 'bg-white text-[#594ff4]' : 'bg-[#f6f6f6] text-[#5d5d5d]',
+              )}>
+                <UsersRoundIcon aria-hidden="true" size={19} />
+              </span>
+              <span className="min-w-0 flex-1">
+                <span className="block truncate text-sm font-bold">Todos tus grupos</span>
+                <span className="mt-0.5 block text-xs text-[#5d5d5d]">
+                  {groupId === null ? 'Vista general activa' : 'Actividad y balances generales'}
+                </span>
+              </span>
+              {groupId === null
+                ? <CheckIcon aria-hidden="true" size={19} className="shrink-0" />
+                : <ChevronRightIcon aria-hidden="true" size={19} className="shrink-0 text-[#888888]" />}
+            </Button>
+
             {groups.map((group) => {
               const isActive = group.id === groupId;
 

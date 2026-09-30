@@ -2,48 +2,39 @@
 
 import { Avatar } from '@/components/layout/Avatar';
 import { GroupSwitcherSheet } from '@/components/features/GroupSwitcherSheet';
-import { BellIcon } from 'lucide-react';
+import { PaymentNotificationsSheet } from '@/components/features/PaymentNotificationsSheet';
 import { type Member } from '@/lib/ledger';
 
 interface HeaderProps {
-  currentMemberId: string;
+  currentMemberId: string | null;
   members: Member[];
+  profileMember: Member;
   groups: Array<{ id: string; name: string }>;
-  groupId: string;
+  groupId: string | null;
   groupName: string;
-  showGroupSwitcher?: boolean;
-  onGroupChange: (groupId: string) => void;
-  onActivityClick: () => void;
+  accountName: string;
+  onGroupChange: (groupId: string | null) => void;
+  onPaymentsChanged: () => void;
 }
 
-export function Header({ currentMemberId, members, groups, groupId, groupName, showGroupSwitcher = true, onGroupChange, onActivityClick }: HeaderProps) {
-  const member = members.find((m) => m.id === currentMemberId) ?? members[0];
+export function Header({ currentMemberId, members, profileMember, groups, groupId, groupName, accountName, onGroupChange, onPaymentsChanged }: HeaderProps) {
+  const member = members.find((m) => m.id === currentMemberId) ?? profileMember;
 
   return (
     <header className="flex items-center justify-between">
       <div className="flex items-center gap-3">
         <Avatar member={member} />
         <div>
-          {showGroupSwitcher ? (
-            <GroupSwitcherSheet
-              groups={groups}
-              groupId={groupId}
-              groupName={groupName}
-              onGroupChange={onGroupChange}
-            />
-          ) : (
-            <p className="text-sm font-semibold text-[#1f1f1f]">Hola, {member?.name ?? 'Usuario'}</p>
-          )}
+          <GroupSwitcherSheet
+            groups={groups}
+            groupId={groupId}
+            groupName={groupName}
+            accountName={accountName}
+            onGroupChange={onGroupChange}
+          />
         </div>
       </div>
-      <button
-        type="button"
-        onClick={onActivityClick}
-        aria-label="Ver actividad"
-        className={`grid size-11 place-items-center rounded-full border transition active:scale-[0.96] ${showGroupSwitcher ? 'border-[#e7e7e7] bg-white text-[#1f1f1f]' : 'border-[#e7e3ff] bg-[#efedff] text-[#594ff4]'}`}
-      >
-        <BellIcon aria-hidden="true" size={19} strokeWidth={1.8} />
-      </button>
+      <PaymentNotificationsSheet onPaymentUpdated={onPaymentsChanged} />
     </header>
   );
 }

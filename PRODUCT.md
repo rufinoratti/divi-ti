@@ -22,7 +22,8 @@ La interfaz es web adaptable a móviles y cuenta con un manifiesto PWA. El uso s
 - El reparto asigna los centavos sobrantes de forma determinística para que las partes sumen el total.
 - Un préstamo es entre dos integrantes: quien presta queda a favor y quien recibe queda debiendo.
 - Los balances combinan gastos y préstamos; las propuestas de pago reducen la cantidad de transferencias.
-- Divi calcula deudas, pero no mueve dinero ni confirma que una deuda fue saldada.
+- Divi no mueve dinero: una persona puede informar un pago y la otra confirmarlo desde sus notificaciones.
+- Los pagos informados quedan pendientes y no cambian el balance hasta que quien los recibe confirma.
 
 ## Funcionalidad ya implementada
 
@@ -34,9 +35,11 @@ La interfaz es web adaptable a móviles y cuenta con un manifiesto PWA. El uso s
 - Balance neto por persona, sugerencias para saldar y filtro de actividad.
 - Persistencia en Supabase, con acceso protegido por sesión y políticas RLS.
 - Selector de grupo para cuentas que participan en más de un grupo; conserva la selección en el dispositivo.
+- Vista general de todos los grupos, con actividad conjunta, balances separados por grupo y perfil de cuenta.
 - Creación de grupos adicionales desde el perfil.
+- Avisos de pago entre integrantes, con confirmación o rechazo, notificaciones en la app e historial trazable.
 
-Todavía no se pueden cargar ítems del ticket, editar movimientos ni registrar una liquidación como pagada.
+Todavía no se pueden cargar ítems del ticket ni editar movimientos.
 
 ## Iteraciones propuestas por el equipo
 
@@ -53,7 +56,7 @@ Todavía no se pueden cargar ítems del ticket, editar movimientos ni registrar 
 
 ### Cierre del MVP
 
-- Completar las acciones necesarias para corregir movimientos y registrar pagos de saldos.
+- Completar las acciones necesarias para corregir movimientos.
 - Preparar datos de demostración, documentación de instalación y una presentación del flujo del producto.
 - Definir y ejecutar la validación funcional antes de entregar.
 
@@ -64,8 +67,8 @@ Estas iteraciones son una propuesta de trabajo del equipo y se pueden ajustar al
 - Next.js con React 19, TypeScript y Vinext sobre Vite.
 - Tailwind CSS v4, shadcn/ui y componentes propios.
 - Supabase Auth y PostgreSQL.
-- Esquema de datos en español: `perfiles`, `grupos`, `miembros`, `movimientos`, `movimiento_participantes` e `invitaciones`.
-- Rutas de servidor para grupos, integrantes, movimientos e invitaciones; validación de requests con Zod.
+- Esquema de datos en español: `perfiles`, `grupos`, `miembros`, `movimientos`, `movimiento_participantes`, `invitaciones`, `liquidaciones` y `notificaciones`.
+- Rutas de servidor para grupos, integrantes, movimientos, invitaciones y pagos; validación de requests con Zod.
 - Cálculo de balances y propuestas de pago en `lib/ledger.ts`.
 
 ## Desarrollo local

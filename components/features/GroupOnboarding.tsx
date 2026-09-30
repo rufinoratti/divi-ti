@@ -2,6 +2,7 @@
 
 import { useState, type FormEvent } from 'react';
 import { GroupJoinCode } from '@/components/features/GroupJoinCode';
+import { ACTIVE_GROUP_STORAGE_KEY, GROUP_SELECTION_VERSION_KEY } from '@/lib/group-state';
 
 interface GroupOnboardingProps {
   onCancel?: () => void;
@@ -26,7 +27,7 @@ export function GroupOnboarding({ onCancel }: GroupOnboardingProps) {
         body: JSON.stringify({ name, memberName: memberName || undefined }),
       });
       const data = await response.json() as {
-        group?: { nombre?: string; codigo_union?: string };
+        group?: { id?: string; nombre?: string; codigo_union?: string };
         error?: { message?: string } | string;
       };
 
@@ -34,6 +35,13 @@ export function GroupOnboarding({ onCancel }: GroupOnboardingProps) {
         const message = typeof data.error === 'string' ? data.error : data.error?.message;
         setError(message ?? 'No pudimos crear el grupo y generar su código para unirse.');
         return;
+      }
+
+      if (data.group.id) {
+        try {
+          window.localStorage.setItem(ACTIVE_GROUP_STORAGE_KEY, data.group.id);
+          window.localStorage.setItem(GROUP_SELECTION_VERSION_KEY, '1');
+        } catch {}
       }
 
       setCreatedGroup({ name: data.group.nombre ?? name, code: data.group.codigo_union });

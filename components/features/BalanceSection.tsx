@@ -1,7 +1,9 @@
 'use client';
 
-import { ArrowUpRightIcon } from 'lucide-react';
-import { type Member, type Settlement } from '@/lib/ledger';
+import { useState } from 'react';
+import { ArrowUpRightIcon, CheckIcon, Clock3Icon } from 'lucide-react';
+
+import { type Member, type Settlement, type SettlementPayment } from '@/lib/ledger';
 import { Avatar } from '@/components/layout/Avatar';
 import { formatARS } from '@/lib/utils';
 
@@ -9,9 +11,52 @@ interface BalanceSectionProps {
   members: Member[];
   balances: Record<string, number>;
   settlements: Settlement[];
+  payments: SettlementPayment[];
+  groupId: string;
+  currentMemberId: string;
+  onPaymentChanged: () => void;
 }
 
-export function BalanceSection({ members, balances, settlements }: BalanceSectionProps) {
+function formatPaymentDate(value: string) {
+  return new Intl.DateTimeFormat('es-AR', { dateStyle: 'medium', timeStyle: 'short' }).format(new Date(value));
+}
+
+export function BalanceSection({ members, balances, settlements, payments, groupId, currentMemberId, onPaymentChanged }: BalanceSectionProps) {
+  const [submittingPair, setSubmittingPair] = useState<string | null>(null);
+  const [error, setError] = useState('');
+
+  async function reportPayment(settlement: Settlement) {
+    const pairKey = `${settlement.from}:${settlement.to}`;
+    setSubmittingPair(pairKey);
+    setError('');
+
+    try {
+      const response = await fetch('/api/settlements', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          groupId,
+          fromMemberId: settlement.from,
+          toMemberId: settlement.to,
+          amount: settlement.amount,
+        }),
+      });
+      const data = await response.json() as { error?: { message?: string } | string };
+
+      if (!response.ok) {
+        const message = typeof data.error === 'string' ? data.error : data.error?.message;
+        setError(message ?? 'No pudimos avisar que pagaste. Intentá de nuevo.');
+        return;
+      }
+
+      onPaymentChanged();
+    } catch {
+      setError('No pudimos conectarnos con Divi. Revisá tu conexión e intentá de nuevo.');
+    } finally {
+      setSubmittingPair(null);
+    }
+  }
+
   return (
     <section className="mt-8" aria-labelledby="balance-title">
       <h1 id="balance-title" className="text-3xl font-bold tracking-[-0.045em]">Balance del grupo</h1>
@@ -27,26 +72,97 @@ export function BalanceSection({ members, balances, settlements }: BalanceSectio
             <p className="text-sm text-[#5d5d5d]">Menos transferencias, mismo resultado.</p>
           </div>
         </div>
+        {error && <p role="alert" className="mt-4 rounded-2xl bg-[#fef4f4] p-3 text-sm font-medium text-[#b42318]">{error}</p>}
         <div className="mt-5 space-y-3">
+          {settlements.length === 0 && (
+            <p className="rounded-2xl bg-white p-4 text-sm text-[#5d5d5d]">El grupo está al día.</p>
+          )}
           {settlements.map((settlement) => {
-            const from = members.find((m) => m.id === settlement.from) ?? members[0];
-            const to = members.find((m) => m.id === settlement.to) ?? members[0];
+            const from = members.find((member) => member.id === settlement.from) ?? members[0];
+            const to = members.find((member) => member.id === settlement.to) ?? members[0];
+            const pairKey = `${settlement.from}:${settlement.to}`;
+            const pendingPayment = payments.find((payment) => (
+              payment.status === 'pendiente'
+              && payment.from === settlement.from
+              && payment.to === settlement.to
+            ));
+            const canReportPayment = settlement.from === currentMemberId && Boolean(to?.userId);
+
             return (
-              <div key={`${settlement.from}-${settlement.to}`} className="rounded-2xl bg-white p-4">
+              <div key={pairKey} className="rounded-2xl bg-white p-4">
                 <div className="flex items-center justify-between gap-4">
                   <div className="flex min-w-0 items-center gap-2">
                     <Avatar member={from} size="small" />
                     <ArrowUpRightIcon aria-hidden="true" width="16" height="16" className="shrink-0 text-[#888888]" />
                     <Avatar member={to} size="small" />
-                    <p className="min-w-0 truncate text-sm font-bold">{from.name} paga a {to.name}</p>
+                    <p className="min-w-0 truncate text-sm font-bold">{from?.name ?? 'Integrante'} paga a {to?.name ?? 'integrante'}</p>
                   </div>
                   <p className="shrink-0 text-sm font-bold tabular-nums">{formatARS(settlement.amount)}</p>
                 </div>
+
+                {pendingPayment && (
+                  <p className="mt-3 inline-flex items-center gap-1.5 text-xs font-semibold text-[#8a5a00]">
+                    <Clock3Icon aria-hidden="true" size={14} />
+                    Avisaste que pagaste; falta que {to?.name ?? 'la otra persona'} confirme.
+                  </p>
+                )}
+                {canReportPayment && !pendingPayment && (
+                  <button
+                    type="button"
+                    disabled={submittingPair === pairKey}
+                    onClick={() => { void reportPayment(settlement); }}
+                    className="mt-4 inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-full border border-[#594ff4] px-4 text-sm font-bold text-[#594ff4] transition hover:bg-[#f1f0ff] disabled:cursor-wait disabled:opacity-50"
+                  >
+                    <CheckIcon aria-hidden="true" size={16} />
+                    {submittingPair === pairKey ? 'Enviando aviso…' : 'Marcar como pagado'}
+                  </button>
+                )}
+                {settlement.from === currentMemberId && !to?.userId && !pendingPayment && (
+                  <p className="mt-3 text-xs leading-5 text-[#888888]">
+                    La otra persona necesita vincular su cuenta para confirmar el pago.
+                  </p>
+                )}
               </div>
             );
           })}
         </div>
       </section>
+
+      {payments.length > 0 && (
+        <section className="mt-7" aria-labelledby="payments-title">
+          <h2 id="payments-title" className="text-xl font-bold tracking-[-0.035em]">Historial de pagos</h2>
+          <div className="mt-4 space-y-3">
+            {payments.map((payment) => {
+              const from = members.find((member) => member.id === payment.from);
+              const to = members.find((member) => member.id === payment.to);
+              const resolver = members.find((member) => member.userId === payment.resolvedBy);
+              const statusLabel = payment.status === 'confirmada'
+                ? `Confirmado${resolver ? ` por ${resolver.name}` : ''}`
+                : payment.status === 'rechazada'
+                  ? `Rechazado${resolver ? ` por ${resolver.name}` : ''}`
+                  : 'Pendiente de confirmación';
+
+              return (
+                <article key={payment.id} className="rounded-2xl border border-[#e7e7e7] p-4">
+                  <div className="flex items-start justify-between gap-3">
+                    <div>
+                      <p className="text-sm font-bold">{from?.name ?? 'Integrante'} informó un pago a {to?.name ?? 'integrante'}</p>
+                      <p className="mt-1 text-xs text-[#5d5d5d]">Informado el {formatPaymentDate(payment.createdAt)}</p>
+                      {payment.resolvedAt && (
+                        <p className="mt-1 text-xs text-[#5d5d5d]">Respondido el {formatPaymentDate(payment.resolvedAt)}</p>
+                      )}
+                    </div>
+                    <p className="shrink-0 text-sm font-bold tabular-nums">{formatARS(payment.amount)}</p>
+                  </div>
+                  <p className={`mt-3 text-xs font-bold ${payment.status === 'confirmada' ? 'text-[#247446]' : payment.status === 'rechazada' ? 'text-[#b42318]' : 'text-[#8a5a00]'}`}>
+                    {statusLabel}
+                  </p>
+                </article>
+              );
+            })}
+          </div>
+        </section>
+      )}
 
       <section className="mt-7" aria-labelledby="members-title">
         <h2 id="members-title" className="text-xl font-bold tracking-[-0.035em]">Por persona</h2>

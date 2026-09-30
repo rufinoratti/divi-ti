@@ -5,7 +5,7 @@ import { PlusIcon, XIcon } from 'lucide-react';
 
 import { Field } from '@/components/layout/Field';
 import { Dialog, DialogClose, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { ACTIVE_GROUP_STORAGE_KEY } from '@/lib/group-state';
+import { ACTIVE_GROUP_STORAGE_KEY, GROUP_SELECTION_VERSION_KEY } from '@/lib/group-state';
 
 interface CreateGroupDialogProps {
   compact?: boolean;
@@ -54,6 +54,7 @@ export function CreateGroupDialog({ compact = false, compactLabel = 'Crear otro 
 
       try {
         window.localStorage.setItem(ACTIVE_GROUP_STORAGE_KEY, data.group.id);
+        window.localStorage.setItem(GROUP_SELECTION_VERSION_KEY, '1');
       } catch {}
 
       window.location.assign('/');
