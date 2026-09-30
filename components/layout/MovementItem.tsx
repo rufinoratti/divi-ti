@@ -3,15 +3,18 @@
 import { type LedgerMovement, type Member } from '@/lib/ledger';
 import { MovementIcon } from '@/components/layout/MovementIcon';
 import { formatARS } from '@/lib/utils';
+import { PencilIcon } from 'lucide-react';
 
 interface MovementItemProps {
   movement: LedgerMovement;
   members: Member[];
   currentMemberId: string | null;
   currentMemberIds?: string[];
+  onEdit?: (movement: LedgerMovement) => void;
+  isLocked?: boolean;
 }
 
-export function MovementItem({ movement, members, currentMemberId, currentMemberIds }: MovementItemProps) {
+export function MovementItem({ movement, members, currentMemberId, currentMemberIds, onEdit, isLocked = false }: MovementItemProps) {
   const payer = members.find((m) => m.id === movement.paidBy) ?? members[0];
   const recipient = movement.recipient ? members.find((m) => m.id === movement.recipient) : undefined;
   const isCurrentPayer = currentMemberIds
@@ -40,6 +43,18 @@ export function MovementItem({ movement, members, currentMemberId, currentMember
           {detail}{movement.groupName ? ` · ${movement.groupName}` : ''}
         </p>
       </div>
+      {onEdit && (
+        <button
+          type="button"
+          onClick={() => onEdit(movement)}
+          disabled={isLocked}
+          title={isLocked ? 'No se puede editar un movimiento con pagos asociados.' : 'Editar movimiento'}
+          aria-label={isLocked ? `No se puede editar ${movement.description}: tiene pagos asociados` : `Editar ${movement.description}`}
+          className="grid size-10 shrink-0 place-items-center rounded-full text-[#594ff4] transition hover:bg-[#f1f0ff] active:scale-[0.96] disabled:cursor-not-allowed disabled:text-[#aaaaaa]"
+        >
+          <PencilIcon aria-hidden="true" size={17} />
+        </button>
+      )}
     </article>
   );
 }

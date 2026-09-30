@@ -9,6 +9,7 @@ import { type Member } from '@/lib/ledger';
 import { InviteMemberForm } from '@/components/features/InviteMemberForm';
 import { CreateGroupDialog } from '@/components/features/CreateGroupDialog';
 import { GroupJoinCode } from '@/components/features/GroupJoinCode';
+import { MonthlyIncomeSettings } from '@/components/features/MonthlyIncomeSettings';
 import { useAuth } from '@/hooks/useAuth';
 import {
   AlertDialog,
@@ -69,6 +70,7 @@ export function ProfileSection({ currentMemberId, members, profileMember, accoun
       </section>
       {groupJoinCode && <GroupJoinCode code={groupJoinCode} groupName={groupName || 'tu grupo'} />}
       {canInvite && groupId && <InviteMemberForm groupId={groupId} />}
+      <MonthlyIncomeSettings />
 
       <section className="mt-7 rounded-[30px] border border-[#e7e7e7] p-6">
         <UsersIcon aria-hidden="true" size={23} className="text-[#594ff4]" strokeWidth={1.8} />

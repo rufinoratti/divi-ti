@@ -243,7 +243,7 @@ create index if not exists movimiento_participantes_grupo_id_idx
 comment on table public.movimiento_participantes is
   'Personas que participan de un gasto y la parte que les corresponde.';
 comment on column public.movimiento_participantes.monto_parte is
-  'Parte individual del gasto. En esta iteración se calcula en partes iguales.';
+  'Parte individual del gasto asignada a este integrante.';
 
 -- ============================================================
 -- 5. Seguridad para la API de Supabase

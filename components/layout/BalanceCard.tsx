@@ -11,9 +11,10 @@ interface BalanceCardProps {
   memberCount: number;
   onViewBalance: () => void;
   onAddMovement: () => void;
+  onAddLoan: () => void;
 }
 
-export function BalanceCard({ currentOwing, currentOwed, owingCount, owedCount, totalExpenses, memberCount, onViewBalance, onAddMovement }: BalanceCardProps) {
+export function BalanceCard({ currentOwing, currentOwed, owingCount, owedCount, totalExpenses, memberCount, onViewBalance, onAddMovement, onAddLoan }: BalanceCardProps) {
   return (
     <>
       <section className="rounded-[30px] border border-[#dcd6ff] bg-[#ebe8ff] p-6" aria-label="Balance personal">
@@ -41,15 +42,19 @@ export function BalanceCard({ currentOwing, currentOwed, owingCount, owedCount, 
       </section>
 
       <div className="grid grid-cols-2 gap-3">
-        <button type="button" onClick={onAddMovement} className="flex min-h-14 items-center justify-center gap-2 rounded-full bg-[#594ff4] px-5 text-sm font-bold text-white transition active:scale-[0.98]">
+        <button type="button" onClick={onAddMovement} className="flex min-h-14 items-center justify-center gap-2 rounded-full bg-[#594ff4] px-4 text-sm font-bold text-white transition active:scale-[0.98]">
           <svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 5v14M5 12h14" /></svg>
-          Agregar movimiento
+          Agregar gasto
         </button>
-        <button type="button" onClick={onViewBalance} className="flex min-h-14 items-center justify-center gap-2 rounded-full border border-[#b0b0b0] bg-white px-5 text-sm font-bold text-[#1f1f1f] transition active:scale-[0.98]">
-          <svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><circle cx="12" cy="12" r="10" /><path d="M12 6v6l4 2" /></svg>
-          Ver balance
+        <button type="button" onClick={onAddLoan} className="flex min-h-14 items-center justify-center gap-2 rounded-full border border-[#b0b0b0] bg-white px-4 text-sm font-bold text-[#1f1f1f] transition active:scale-[0.98]">
+          <span aria-hidden="true">💸</span>
+          Préstamo rápido
         </button>
       </div>
+      <button type="button" onClick={onViewBalance} className="flex min-h-11 w-full items-center justify-center gap-2 rounded-full px-4 text-sm font-bold text-[#594ff4] transition active:scale-[0.98]">
+          <svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><circle cx="12" cy="12" r="10" /><path d="M12 6v6l4 2" /></svg>
+          Ver balance
+      </button>
     </>
   );
 }
