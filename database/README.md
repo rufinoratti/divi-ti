@@ -20,6 +20,8 @@ También podés copiar `.env.example` como base.
 
 Si el proyecto de Supabase ya tenía el schema anterior, ejecutá también `supabase/migrations/20260929224821_add_group_join_codes.sql` en el SQL Editor para agregar los códigos reutilizables de grupo.
 
+Para habilitar los avisos de pago con confirmación del destinatario, ejecutá `supabase/migrations/20260929234149_add_payment_confirmation_notifications.sql`, `supabase/migrations/20260929234356_index_settlement_foreign_keys.sql`, `supabase/migrations/20260929234451_preserve_payment_audit_users.sql` y `supabase/migrations/20260929234634_enforce_payment_resolution_audit.sql`.
+
 ## Paso 4: Configurar Auth
 1. En Supabase abrí **Authentication → Providers → Email**.
 2. Activá Email/Password.

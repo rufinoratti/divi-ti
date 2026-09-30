@@ -7,6 +7,7 @@ import { type AuthSessionPayload } from '@/lib/auth/types';
 interface AuthState {
   userId: string | null;
   email: string | null;
+  name: string | null;
   isAuthenticated: boolean;
   isLoading: boolean;
 }
@@ -15,6 +16,7 @@ export function useAuth() {
   const [state, setState] = useState<AuthState>({
     userId: null,
     email: null,
+    name: null,
     isAuthenticated: false,
     isLoading: true,
   });
@@ -33,6 +35,7 @@ export function useAuth() {
         setState({
           userId: null,
           email: null,
+          name: null,
           isAuthenticated: false,
           isLoading: false,
         });
@@ -41,7 +44,11 @@ export function useAuth() {
 
       const userId = data.user.id;
       const email = data.user.email ?? null;
-      setState({ userId, email, isAuthenticated: true, isLoading: false });
+      const metadataName = typeof data.user.user_metadata?.display_name === 'string'
+        ? data.user.user_metadata.display_name.trim()
+        : '';
+      const name = metadataName || email?.split('@')[0] || null;
+      setState({ userId, email, name, isAuthenticated: true, isLoading: false });
     } catch {
       setState((prev) => ({ ...prev, isLoading: false }));
     }
@@ -76,7 +83,7 @@ export function useAuth() {
       if (supabase) await supabase.auth.signOut();
     } catch {}
 
-    setState({ userId: null, email: null, isAuthenticated: false, isLoading: false });
+    setState({ userId: null, email: null, name: null, isAuthenticated: false, isLoading: false });
   }, []);
 
   useEffect(() => {
@@ -86,7 +93,7 @@ export function useAuth() {
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
       if (event === 'SIGNED_OUT') {
-        setState({ userId: null, email: null, isAuthenticated: false, isLoading: false });
+        setState({ userId: null, email: null, name: null, isAuthenticated: false, isLoading: false });
       }
       if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
         setTimeout(() => { void setAuthState(); }, 0);

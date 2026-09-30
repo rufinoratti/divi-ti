@@ -8,7 +8,9 @@ type ActivityFilter = 'all' | LedgerMovement['kind'];
 interface ActivitySectionProps {
   members: Member[];
   movements: LedgerMovement[];
-  currentMemberId: string;
+  currentMemberId: string | null;
+  currentMemberIds?: string[];
+  allGroups?: boolean;
   activityFilter: ActivityFilter;
   onActivityFilterChange: (filter: ActivityFilter) => void;
 }
@@ -17,13 +19,19 @@ export function ActivitySection({
   members,
   movements,
   currentMemberId,
+  currentMemberIds,
+  allGroups = false,
   activityFilter,
   onActivityFilterChange,
 }: ActivitySectionProps) {
   return (
     <section className="mt-8" aria-labelledby="activity-title">
       <h1 id="activity-title" className="text-3xl font-bold tracking-[-0.045em]">Actividad</h1>
-      <p className="mt-2 text-sm leading-6 text-[#5d5d5d]">Cada carga actualiza el balance del grupo al instante.</p>
+      <p className="mt-2 text-sm leading-6 text-[#5d5d5d]">
+        {allGroups
+          ? 'Movimientos de todos tus grupos, ordenados por fecha.'
+          : 'Cada carga actualiza el balance del grupo al instante.'}
+      </p>
       <div className="mt-6 flex gap-2 overflow-x-auto pb-1" aria-label="Filtros de actividad">
         {[
           { id: 'all' as const, label: 'Todos' },
@@ -41,7 +49,7 @@ export function ActivitySection({
         ))}
       </div>
       <div className="mt-6">
-        <MovementList movements={movements} members={members} currentMemberId={currentMemberId} emptyLabel="No hay movimientos para este filtro." />
+        <MovementList movements={movements} members={members} currentMemberId={currentMemberId} currentMemberIds={currentMemberIds} emptyLabel="No hay movimientos para este filtro." />
       </div>
     </section>
   );

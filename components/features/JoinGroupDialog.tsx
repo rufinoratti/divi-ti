@@ -4,7 +4,7 @@ import { useId, useState, type FormEvent } from 'react';
 import { KeyRoundIcon, XIcon } from 'lucide-react';
 
 import { Dialog, DialogClose, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { ACTIVE_GROUP_STORAGE_KEY } from '@/lib/group-state';
+import { ACTIVE_GROUP_STORAGE_KEY, GROUP_SELECTION_VERSION_KEY } from '@/lib/group-state';
 
 interface JoinGroupDialogProps {
   compact?: boolean;
@@ -50,6 +50,7 @@ export function JoinGroupDialog({ compact = false }: JoinGroupDialogProps) {
 
       try {
         window.localStorage.setItem(ACTIVE_GROUP_STORAGE_KEY, groupId);
+        window.localStorage.setItem(GROUP_SELECTION_VERSION_KEY, '1');
       } catch {}
 
       window.location.assign('/');

@@ -22,16 +22,20 @@ import {
 } from '@/components/ui/alert-dialog';
 
 interface ProfileSectionProps {
-  currentMemberId: string;
+  currentMemberId: string | null;
   members: Member[];
+  profileMember: Member;
+  accountEmail: string | null;
+  allGroupsView: boolean;
+  groupCount: number;
   groupName: string;
   groupId: string | null;
   groupJoinCode: string;
   canInvite: boolean;
 }
 
-export function ProfileSection({ currentMemberId, members, groupName, groupId, groupJoinCode, canInvite }: ProfileSectionProps) {
-  const currentMember = members.find((m) => m.id === currentMemberId) ?? members[0];
+export function ProfileSection({ currentMemberId, members, profileMember, accountEmail, allGroupsView, groupCount, groupName, groupId, groupJoinCode, canInvite }: ProfileSectionProps) {
+  const currentMember = members.find((m) => m.id === currentMemberId) ?? profileMember;
   const { logout } = useAuth();
   const router = useRouter();
   const [logoutConfirmationOpen, setLogoutConfirmationOpen] = useState(false);
@@ -51,14 +55,16 @@ export function ProfileSection({ currentMemberId, members, groupName, groupId, g
         <div className="flex items-center gap-4">
           <Avatar member={currentMember} />
           <div>
-            <p className="text-lg font-bold tracking-[-0.03em]">{currentMember?.name ?? 'Integrante'}</p>
-            <p className="text-sm text-[#5d5d5d]">Integrante de {groupName || 'tu grupo'}</p>
+            <p className="text-lg font-bold tracking-[-0.03em]">{currentMember.name}</p>
+            <p className="text-sm text-[#5d5d5d]">{allGroupsView ? 'Tu cuenta Divi' : `Integrante de ${groupName || 'tu grupo'}`}</p>
           </div>
         </div>
         <div className="mt-6 space-y-4 border-t border-[#e7e7e7] pt-5 text-sm">
+          {accountEmail && <ProfileRow label="Email" value={accountEmail} />}
+          {allGroupsView && <ProfileRow label="Grupos" value={`${groupCount} grupos`} />}
           <ProfileRow label="Idioma" value="Español" />
           <ProfileRow label="Moneda" value="Pesos argentinos (ARS)" />
-          <ProfileRow label="Datos" value="Guardados en este dispositivo" />
+          <ProfileRow label="Datos" value="Guardados en tu cuenta" />
         </div>
       </section>
       {groupJoinCode && <GroupJoinCode code={groupJoinCode} groupName={groupName || 'tu grupo'} />}

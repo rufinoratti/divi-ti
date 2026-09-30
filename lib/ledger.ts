@@ -2,6 +2,7 @@ export type Member = {
   id: string;
   name: string;
   initials: string;
+  userId?: string | null;
 };
 
 export type MovementKind = 'expense' | 'loan';
@@ -25,12 +26,58 @@ export type LedgerMovement = {
   participants: string[];
   participantShares?: Record<string, number>;
   createdAt: string;
+  groupId?: string;
+  groupName?: string;
 };
 
 export type Settlement = {
   from: string;
   to: string;
   amount: number;
+};
+
+export type SettlementPaymentStatus = 'pendiente' | 'confirmada' | 'rechazada';
+
+export type SettlementPayment = {
+  id: string;
+  groupId: string;
+  from: string;
+  to: string;
+  amount: number;
+  status: SettlementPaymentStatus;
+  reportedBy: string;
+  createdAt: string;
+  resolvedBy: string | null;
+  resolvedAt: string | null;
+};
+
+export type PaymentNotification = {
+  id: string;
+  type: 'pago_informado' | 'pago_confirmado' | 'pago_rechazado';
+  createdAt: string;
+  readAt: string | null;
+  payment: {
+    id: string;
+    groupId: string;
+    groupName: string;
+    fromMemberId: string;
+    fromMemberName: string;
+    toMemberId: string;
+    toMemberName: string;
+    amount: number;
+    status: SettlementPaymentStatus;
+  };
+};
+
+export type GroupLedger = {
+  id: string;
+  name: string;
+  members: Member[];
+  currentMemberId: string | null;
+  movements: LedgerMovement[];
+  payments: SettlementPayment[];
+  balances: Record<string, number>;
+  settlements: Settlement[];
 };
 
 export function toCurrencyCents(value: number) {
@@ -57,6 +104,7 @@ export function splitAmountEqually(amount: number, participantCount: number) {
 export function calculateBalances(
   members: Member[],
   movements: LedgerMovement[],
+  payments: SettlementPayment[] = [],
 ) {
   const balances = Object.fromEntries(
     members.map((member) => [member.id, 0]),
@@ -83,6 +131,15 @@ export function calculateBalances(
     for (const [index, participant] of participants.entries()) {
       balances[participant] -= shares[index] ?? 0;
     }
+  }
+
+  for (const payment of payments) {
+    if (payment.status !== 'confirmada') continue;
+    if (!(payment.from in balances) || !(payment.to in balances)) continue;
+
+    const amount = roundCurrency(payment.amount);
+    balances[payment.from] += amount;
+    balances[payment.to] -= amount;
   }
 
   return Object.fromEntries(

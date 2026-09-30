@@ -45,29 +45,51 @@ function mapMovement(movement: DatabaseMovement) {
       participants.map((item) => [item.miembro_id, Number(item.monto_parte)]),
     ),
     createdAt: movement.creado_en,
+    groupId: movement.grupo_id,
   };
 }
 
 export async function GET(request: NextRequest) {
-  const query = groupIdQuerySchema.safeParse({
-    group_id: request.nextUrl.searchParams.get('group_id'),
-  });
-  if (!query.success) return validationResponse(query.error);
-  const groupId = query.data.group_id;
+  const groupIdParam = request.nextUrl.searchParams.get('group_id');
+  const query = groupIdParam === null ? null : groupIdQuerySchema.safeParse({ group_id: groupIdParam });
+  if (query && !query.success) return validationResponse(query.error);
+  const groupId = query?.success ? query.data.group_id : null;
 
   try {
     const { supabase, applyCookies } = createSupabaseRouteClient(request);
     const { data: userData, error: userError } = await supabase.auth.getUser();
     if (userError || !userData.user) return authErrorResponse(userError, 401, 'Necesitás iniciar sesión.');
 
-    const { data, error } = await supabase
-      .from('movimientos')
-      .select('id, grupo_id, tipo, descripcion, monto, moneda, categoria, pagado_por, receptor, creado_en, movimiento_participantes(miembro_id, monto_parte)')
-      .eq('grupo_id', groupId)
-      .order('creado_en', { ascending: false });
-    if (error) return internalErrorResponse();
+    const { data: groups, error: groupsError } = await supabase.from('grupos').select('id, nombre');
+    if (groupsError) return internalErrorResponse();
+    const groupNames = new Map((groups ?? []).map((group) => [group.id, group.nombre]));
+    const movements: DatabaseMovement[] = [];
 
-    const response = NextResponse.json({ movements: (data ?? []).map((item) => mapMovement(item as DatabaseMovement)) });
+    if (!groupId || groupNames.has(groupId)) {
+      for (let offset = 0; ; offset += 1000) {
+        let movementQuery = supabase
+          .from('movimientos')
+          .select('id, grupo_id, tipo, descripcion, monto, moneda, categoria, pagado_por, receptor, creado_en, movimiento_participantes(miembro_id, monto_parte)');
+        if (groupId) movementQuery = movementQuery.eq('grupo_id', groupId);
+
+        const { data, error } = await movementQuery
+          .order('creado_en', { ascending: false })
+          .order('id', { ascending: false })
+          .range(offset, offset + 999);
+        if (error) return internalErrorResponse();
+
+        const page = (data ?? []) as DatabaseMovement[];
+        movements.push(...page);
+        if (page.length < 1000) break;
+      }
+    }
+
+    const response = NextResponse.json({
+      movements: movements.map((movement) => ({
+        ...mapMovement(movement),
+        groupName: groupNames.get(movement.grupo_id) ?? 'Grupo',
+      })),
+    });
     response.headers.set('Cache-Control', 'private, no-store');
     applyCookies(response);
     return response;

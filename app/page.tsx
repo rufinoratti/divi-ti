@@ -9,6 +9,8 @@ import { MovementComposer } from '@/components/features/MovementComposer';
 import { BalanceSection } from '@/components/features/BalanceSection';
 import { ActivitySection } from '@/components/features/ActivitySection';
 import { ProfileSection } from '@/components/features/ProfileSection';
+import { AllGroupsHome } from '@/components/features/AllGroupsHome';
+import { AllGroupsBalanceSection } from '@/components/features/AllGroupsBalanceSection';
 import { AppLoading } from '@/components/layout/AppLoading';
 import { MovementList } from '@/components/layout/MovementList';
 import { useMovements, type Tab } from '@/hooks/useMovements';
@@ -39,15 +41,19 @@ function DataError({ message }: { message: string }) {
 }
 
 export default function Home() {
-  const { userId, email, isAuthenticated, isLoading } = useAuth();
+  const { userId, email, name, isAuthenticated, isLoading } = useAuth();
   const {
     movements,
     isReady,
     loadError,
     addMovement,
+    refresh,
     balances,
     settlements,
     members,
+    payments,
+    currentMemberIds,
+    groupLedgers,
     currentMemberId,
     groups,
     groupId,
@@ -67,7 +73,7 @@ export default function Home() {
 
   const handleSubmitMovement = (movement: LedgerMovement) => addMovement(movement);
 
-  const handleGroupChange = (nextGroupId: string) => {
+  const handleGroupChange = (nextGroupId: string | null) => {
     selectGroup(nextGroupId);
     setActiveTab('inicio');
     setActivityFilter('all');
@@ -82,16 +88,36 @@ export default function Home() {
 
   if (loadError) return <DataError message={loadError} />;
 
-  if (!groupId) {
+  if (groups.length === 0) {
     if (isCreatingGroup) return <GroupOnboarding onCancel={() => setIsCreatingGroup(false)} />;
     return <EmptyGroupsHome email={email} onCreateGroup={() => setIsCreatingGroup(true)} />;
   }
 
-  if (!currentMemberId) {
+  const allGroupsView = groupId === null;
+  if (!allGroupsView && !currentMemberId) {
     return <DataError message="Tu cuenta no aparece vinculada a un integrante de este grupo. Volvé a cargar la app; si el problema continúa, pedile al administrador que revise la invitación." />;
   }
 
-  const currentMember = members.find((m) => m.id === currentMemberId);
+  const accountName = name ?? email?.split('@')[0] ?? 'Usuario';
+  const accountInitials = accountName
+    .split(/\s+/)
+    .map((part) => part[0])
+    .join('')
+    .slice(0, 2)
+    .toUpperCase();
+  const profileMember = {
+    id: userId ?? 'account',
+    name: accountName,
+    initials: accountInitials || 'US',
+  };
+  const currentMember = members.find((member) => member.id === currentMemberId);
+
+  function openGroup(groupId: string, tab: Tab = 'inicio') {
+    selectGroup(groupId);
+    setActiveTab(tab);
+    setActivityFilter('all');
+    setComposerOpen(false);
+  }
 
   return (
     <main className="min-h-[100dvh] bg-white text-[#1f1f1f]">
@@ -99,42 +125,74 @@ export default function Home() {
         <Header
           currentMemberId={currentMemberId}
           members={members}
+          profileMember={profileMember}
           groups={groups}
           groupId={groupId}
           groupName={groupName}
+          accountName={accountName}
           onGroupChange={handleGroupChange}
-          onActivityClick={() => setActiveTab('actividad')}
+          onPaymentsChanged={refresh}
         />
 
         {activeTab === 'inicio' && (
-          <section className="mt-8 space-y-7" aria-labelledby="inicio-title">
-            <div>
-              <p className="text-[15px] text-[#5d5d5d]">Hola, {currentMember?.name ?? 'Usuario'}</p>
-              <h1 id="inicio-title" className="mt-1 text-3xl font-bold tracking-[-0.045em]">Tu resumen del grupo</h1>
-            </div>
-
-            <BalanceCard currentBalance={balances[currentMemberId] ?? 0} totalExpenses={totalExpenses} memberCount={members.length} onViewBalance={() => setActiveTab('balance')} onAddMovement={() => setComposerOpen(true)} />
-
-            <section aria-labelledby="recent-title">
-              <div className="mb-4 flex items-end justify-between">
-                <h2 id="recent-title" className="text-xl font-bold tracking-[-0.035em]">Movimientos recientes</h2>
-                <button type="button" onClick={() => setActiveTab('actividad')} className="text-sm font-bold text-[#594ff4] active:scale-[0.98]">Ver todos</button>
+          allGroupsView ? (
+            <AllGroupsHome groups={groupLedgers} onOpenGroup={(nextGroupId) => openGroup(nextGroupId)} />
+          ) : (
+            <section className="mt-8 space-y-7" aria-labelledby="inicio-title">
+              <div>
+                <p className="text-[15px] text-[#5d5d5d]">Hola, {currentMember?.name ?? accountName}</p>
+                <h1 id="inicio-title" className="mt-1 text-3xl font-bold tracking-[-0.045em]">Tu resumen del grupo</h1>
               </div>
-              <MovementList movements={recentMovements} members={members} currentMemberId={currentMemberId} />
+
+              <BalanceCard currentBalance={balances[currentMemberId!] ?? 0} totalExpenses={totalExpenses} memberCount={members.length} onViewBalance={() => setActiveTab('balance')} onAddMovement={() => setComposerOpen(true)} />
+
+              <section aria-labelledby="recent-title">
+                <div className="mb-4 flex items-end justify-between">
+                  <h2 id="recent-title" className="text-xl font-bold tracking-[-0.035em]">Movimientos recientes</h2>
+                  <button type="button" onClick={() => setActiveTab('actividad')} className="text-sm font-bold text-[#594ff4] active:scale-[0.98]">Ver todos</button>
+                </div>
+                <MovementList movements={recentMovements} members={members} currentMemberId={currentMemberId} />
+              </section>
             </section>
-          </section>
+          )
         )}
 
         {activeTab === 'actividad' && (
-          <ActivitySection members={members} movements={filteredMovements} currentMemberId={currentMemberId} activityFilter={activityFilter} onActivityFilterChange={setActivityFilter} />
+          <ActivitySection
+            members={members}
+            movements={filteredMovements}
+            currentMemberId={currentMemberId}
+            currentMemberIds={allGroupsView ? currentMemberIds : undefined}
+            allGroups={allGroupsView}
+            activityFilter={activityFilter}
+            onActivityFilterChange={setActivityFilter}
+          />
         )}
 
-        {activeTab === 'balance' && <BalanceSection members={members} balances={balances} settlements={settlements} />}
+        {activeTab === 'balance' && (
+          allGroupsView ? (
+            <AllGroupsBalanceSection groups={groupLedgers} onOpenGroup={(nextGroupId) => openGroup(nextGroupId, 'balance')} />
+          ) : (
+            <BalanceSection
+              members={members}
+              balances={balances}
+              settlements={settlements}
+              payments={payments}
+              groupId={groupId!}
+              currentMemberId={currentMemberId!}
+              onPaymentChanged={refresh}
+            />
+          )
+        )}
 
         {activeTab === 'perfil' && (
           <ProfileSection
             currentMemberId={currentMemberId}
             members={members}
+            profileMember={profileMember}
+            accountEmail={email}
+            allGroupsView={allGroupsView}
+            groupCount={groups.length}
             groupName={groupName}
             groupId={groupId}
             groupJoinCode={groupJoinCode}
@@ -145,7 +203,9 @@ export default function Home() {
 
       <Navigation activeTab={activeTab} onTabChange={setActiveTab} />
 
-      <MovementComposer key={groupId} open={composerOpen} onOpenChange={setComposerOpen} members={members} currentMemberId={currentMemberId} onSubmit={handleSubmitMovement} />
+      {!allGroupsView && currentMemberId && groupId && (
+        <MovementComposer key={groupId} open={composerOpen} onOpenChange={setComposerOpen} members={members} currentMemberId={currentMemberId} onSubmit={handleSubmitMovement} />
+      )}
     </main>
   );
 }

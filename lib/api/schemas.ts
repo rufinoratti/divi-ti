@@ -31,6 +31,28 @@ export const groupJoinCodeSchema = z.object({
     .refine((value) => /^[A-F0-9]{12}$/.test(value), 'El código del grupo debe tener 12 caracteres.'),
 });
 
+export const createSettlementSchema = z.object({
+  groupId: uuid,
+  fromMemberId: uuid,
+  toMemberId: uuid,
+  amount: z
+    .number({ message: 'El importe debe ser un número.' })
+    .finite('El importe debe ser un número válido.')
+    .positive('El importe debe ser mayor a cero.')
+    .max(999999999999.99, 'El importe es demasiado grande.')
+    .refine((value) => toCurrencyCents(value) > 0, 'El importe mínimo es $0,01.'),
+}).refine((value) => value.fromMemberId !== value.toMemberId, {
+  path: ['toMemberId'],
+  message: 'El pago debe ser entre dos integrantes distintos.',
+});
+
+export const resolveSettlementSchema = z.object({
+  settlementId: uuid,
+  action: z.enum(['confirm', 'reject']),
+});
+
+export const markNotificationsReadSchema = z.object({}).strict();
+
 export const createMemberSchema = z.object({
   groupId: uuid,
   name: z

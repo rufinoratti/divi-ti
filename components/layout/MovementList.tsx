@@ -7,7 +7,8 @@ import { ReceiptTextIcon } from 'lucide-react';
 interface MovementListProps {
   movements: LedgerMovement[];
   members: Member[];
-  currentMemberId: string;
+  currentMemberId: string | null;
+  currentMemberIds?: string[];
   emptyLabel?: string;
 }
 
@@ -15,6 +16,7 @@ export function MovementList({
   movements,
   members,
   currentMemberId,
+  currentMemberIds,
   emptyLabel = 'Todavía no hay movimientos.',
 }: MovementListProps) {
   if (!movements.length) {
@@ -30,7 +32,7 @@ export function MovementList({
   return (
     <div className="space-y-3">
       {movements.map((movement) => (
-        <MovementItem key={movement.id} movement={movement} members={members} currentMemberId={currentMemberId} />
+        <MovementItem key={movement.id} movement={movement} members={members} currentMemberId={currentMemberId} currentMemberIds={currentMemberIds} />
       ))}
     </div>
   );

@@ -1,8 +1,8 @@
 'use client';
 
-import { useState, useEffect, useMemo, useCallback } from 'react';
-import { type Member, type LedgerMovement, calculateBalances, calculateSettlements } from '@/lib/ledger';
-import { ACTIVE_GROUP_STORAGE_KEY } from '@/lib/group-state';
+import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
+import { type GroupLedger, type Member, type LedgerMovement, type SettlementPayment, calculateBalances, calculateSettlements } from '@/lib/ledger';
+import { ACTIVE_GROUP_STORAGE_KEY, ALL_GROUPS_SELECTION, GROUP_SELECTION_VERSION_KEY } from '@/lib/group-state';
 
 export type Tab = 'inicio' | 'actividad' | 'balance' | 'perfil';
 
@@ -34,10 +34,14 @@ export function useMovements(userId?: string) {
   const [groups, setGroups] = useState<Group[]>([]);
   const [groupId, setGroupId] = useState<string | null>(null);
   const [movements, setMovements] = useState<LedgerMovement[]>([]);
+  const [payments, setPayments] = useState<SettlementPayment[]>([]);
   const [isGroupsReady, setIsGroupsReady] = useState(false);
   const [isMovementsReady, setIsMovementsReady] = useState(false);
   const [loadedUserId, setLoadedUserId] = useState<string | null>(null);
   const [loadError, setLoadError] = useState('');
+  const [refreshToken, setRefreshToken] = useState(0);
+  const loadedScopeRef = useRef<string | null>(null);
+  const refresh = useCallback(() => setRefreshToken((current) => current + 1), []);
 
   useEffect(() => {
     let cancelled = false;
@@ -45,10 +49,12 @@ export function useMovements(userId?: string) {
     setGroups([]);
     setGroupId(null);
     setMovements([]);
+    setPayments([]);
     setIsGroupsReady(false);
     setIsMovementsReady(false);
     setLoadedUserId(null);
     setLoadError('');
+    loadedScopeRef.current = null;
 
     if (!userId) {
       setIsGroupsReady(true);
@@ -76,6 +82,7 @@ export function useMovements(userId?: string) {
               id: member.id,
               name: member.nombre,
               initials: member.iniciales,
+              userId: member.usuario_id,
             })),
             memberIdsByUserId: Object.fromEntries(
               groupMembers
@@ -86,25 +93,26 @@ export function useMovements(userId?: string) {
         });
 
         let preferredGroupId: string | null = null;
+        let hasExplicitSelection = false;
         try {
           preferredGroupId = window.localStorage.getItem(ACTIVE_GROUP_STORAGE_KEY);
+          hasExplicitSelection = window.localStorage.getItem(GROUP_SELECTION_VERSION_KEY) === '1';
         } catch {}
 
-        const selectedGroup = availableGroups.find((group) => group.id === preferredGroupId)
-          ?? availableGroups.find((group) => group.memberIdsByUserId[authenticatedUserId])
-          ?? availableGroups[0];
+        const selectedGroup = hasExplicitSelection
+          ? availableGroups.find((group) => group.id === preferredGroupId)
+          : undefined;
 
         setGroups(availableGroups);
         setGroupId(selectedGroup?.id ?? null);
         setLoadedUserId(authenticatedUserId);
         setIsGroupsReady(true);
-        if (!selectedGroup) setIsMovementsReady(true);
+        if (availableGroups.length === 0) setIsMovementsReady(true);
 
-        if (selectedGroup) {
-          try {
-            window.localStorage.setItem(ACTIVE_GROUP_STORAGE_KEY, selectedGroup.id);
-          } catch {}
-        }
+        try {
+          window.localStorage.setItem(ACTIVE_GROUP_STORAGE_KEY, selectedGroup?.id ?? ALL_GROUPS_SELECTION);
+          window.localStorage.setItem(GROUP_SELECTION_VERSION_KEY, '1');
+        } catch {}
       } catch {
         if (cancelled) return;
         setGroups([]);
@@ -124,23 +132,42 @@ export function useMovements(userId?: string) {
     if (!isGroupsReady || loadedUserId !== userId) return undefined;
 
     let cancelled = false;
-    setIsMovementsReady(false);
-    setMovements([]);
-
     const selectedGroupId = groupId;
-    if (!selectedGroupId) {
+    if (!selectedGroupId && groups.length === 0) {
+      setIsMovementsReady(false);
+      setMovements([]);
+      setPayments([]);
       setIsMovementsReady(true);
       return () => { cancelled = true; };
+    }
+
+    const scopeKey = selectedGroupId ?? ALL_GROUPS_SELECTION;
+    const isRefreshingLoadedGroup = loadedScopeRef.current === scopeKey;
+    if (!isRefreshingLoadedGroup) {
+      setIsMovementsReady(false);
+      setMovements([]);
+      setPayments([]);
     }
 
     setLoadError('');
     async function loadMovements() {
       try {
-        const response = await fetch(`/api/movements?group_id=${encodeURIComponent(selectedGroupId!)}`, { cache: 'no-store' });
-        if (!response.ok) throw new Error('No se pudieron cargar los movimientos.');
+        const groupQuery = selectedGroupId ? `?group_id=${encodeURIComponent(selectedGroupId)}` : '';
+        const [movementsResponse, paymentsResponse] = await Promise.all([
+          fetch(`/api/movements${groupQuery}`, { cache: 'no-store' }),
+          fetch(`/api/settlements${groupQuery}`, { cache: 'no-store' }),
+        ]);
+        if (!movementsResponse.ok || !paymentsResponse.ok) throw new Error('No se pudieron cargar los movimientos.');
 
-        const data = await response.json() as { movements?: LedgerMovement[] };
-        if (!cancelled) setMovements(data.movements ?? []);
+        const [movementData, paymentData] = await Promise.all([
+          movementsResponse.json() as Promise<{ movements?: LedgerMovement[] }>,
+          paymentsResponse.json() as Promise<{ settlements?: SettlementPayment[] }>,
+        ]);
+        if (!cancelled) {
+          setMovements(movementData.movements ?? []);
+          setPayments(paymentData.settlements ?? []);
+          loadedScopeRef.current = scopeKey;
+        }
       } catch {
         if (!cancelled) setLoadError('No pudimos cargar los movimientos de este grupo. Revisá tu conexión e intentá de nuevo.');
       } finally {
@@ -150,25 +177,31 @@ export function useMovements(userId?: string) {
 
     void loadMovements();
     return () => { cancelled = true; };
-  }, [groupId, isGroupsReady, loadedUserId, userId]);
+  }, [groupId, groups, isGroupsReady, loadedUserId, refreshToken, userId]);
 
-  const selectGroup = useCallback((nextGroupId: string) => {
-    if (!groups.some((group) => group.id === nextGroupId)) return;
+  const selectGroup = useCallback((nextGroupId: string | null) => {
+    if (nextGroupId && !groups.some((group) => group.id === nextGroupId)) return;
     if (nextGroupId === groupId) return;
 
     setIsMovementsReady(false);
     setMovements([]);
+    setPayments([]);
     setGroupId(nextGroupId);
     setLoadError('');
     try {
-      window.localStorage.setItem(ACTIVE_GROUP_STORAGE_KEY, nextGroupId);
+      window.localStorage.setItem(ACTIVE_GROUP_STORAGE_KEY, nextGroupId ?? ALL_GROUPS_SELECTION);
+      window.localStorage.setItem(GROUP_SELECTION_VERSION_KEY, '1');
     } catch {}
   }, [groupId, groups]);
 
   const activeGroup = groups.find((group) => group.id === groupId) ?? null;
-  const members = activeGroup?.members ?? [];
-  const currentMemberId = userId ? activeGroup?.memberIdsByUserId[userId] ?? null : null;
-  const groupName = activeGroup?.name ?? '';
+  const allMembers = groups.flatMap((group) => group.members);
+  const members = activeGroup?.members ?? allMembers;
+  const currentMemberId = userId && activeGroup ? activeGroup.memberIdsByUserId[userId] ?? null : null;
+  const currentMemberIds = userId
+    ? groups.map((group) => group.memberIdsByUserId[userId]).filter((memberId): memberId is string => Boolean(memberId))
+    : [];
+  const groupName = activeGroup?.name ?? 'Todos tus grupos';
   const groupJoinCode = activeGroup?.joinCode ?? '';
   const groupOwnerId = activeGroup?.ownerId ?? null;
   const isReady = loadedUserId === userId && isGroupsReady && isMovementsReady;
@@ -206,8 +239,23 @@ export function useMovements(userId?: string) {
     }
   }, [groupId]);
 
-  const balances = useMemo(() => calculateBalances(members, movements), [movements, members]);
-  const settlements = useMemo(() => calculateSettlements(members, balances), [balances]);
+  const balances = useMemo(() => calculateBalances(members, movements, payments), [movements, members, payments]);
+  const settlements = useMemo(() => activeGroup ? calculateSettlements(members, balances) : [], [activeGroup, balances, members]);
+  const groupLedgers = useMemo<GroupLedger[]>(() => groups.map((group) => {
+    const groupMovements = movements.filter((movement) => movement.groupId === group.id);
+    const groupPayments = payments.filter((payment) => payment.groupId === group.id);
+    const groupBalances = calculateBalances(group.members, groupMovements, groupPayments);
+    return {
+      id: group.id,
+      name: group.name,
+      members: group.members,
+      currentMemberId: userId ? group.memberIdsByUserId[userId] ?? null : null,
+      movements: groupMovements,
+      payments: groupPayments,
+      balances: groupBalances,
+      settlements: calculateSettlements(group.members, groupBalances),
+    };
+  }), [groups, movements, payments, userId]);
   const groupOptions = groups.map(({ id, name }) => ({ id, name }));
 
   return {
@@ -215,9 +263,13 @@ export function useMovements(userId?: string) {
     isReady,
     loadError,
     addMovement,
+    refresh,
     balances,
     settlements,
     members,
+    currentMemberIds,
+    groupLedgers,
+    payments,
     currentMemberId,
     groups: groupOptions,
     groupId,
