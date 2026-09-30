@@ -16,6 +16,7 @@ Este documento consolida el alcance del PDF de requerimientos para preparar un p
 - Mantener los ingresos privados para su titular; el cálculo puede devolver importes de reparto, pero nunca ingresos ajenos.
 - Mostrar balances netos por integrante y sugerir el menor número de pagos para grupos de hasta ocho integrantes.
 - Las sugerencias son informativas. Los pagos reales siguen asociados a un movimiento y requieren confirmación del destinatario; Divi no transfiere dinero.
+- Si el destinatario rechaza un aviso, el aviso conserva estado rechazado para el historial, la deuda sigue pendiente y la persona deudora puede informar un nuevo pago cuando lo realice.
 
 ## Grupos, datos y experiencia
 
@@ -30,6 +31,7 @@ Este documento consolida el alcance del PDF de requerimientos para preparar un p
 - Los tres métodos de división producen importes exactos que suman el total, incluidos centavos sobrantes.
 - El balance neto de todos los integrantes suma cero y el optimizador produce el menor número de transferencias para grupos de hasta ocho integrantes.
 - Las sugerencias no escriben ni alteran liquidaciones, deudas pendientes o confirmadas.
+- Rechazar un aviso de pago no reduce el saldo por pagar y permite volver a informar un pago mientras quede deuda disponible.
 - Las políticas de base de datos impiden que una cuenta lea o cambie el ingreso de otra.
 - El recorrido se completa en dos pasos como máximo y tarda menos de 10 segundos en las pruebas de aceptación.
 - Probar el producto con 5 a 8 personas y hacer un piloto de cuatro semanas con un grupo real. Medir tiempo de carga, uso de foto frente a texto, retención semanal y percepción de justicia.

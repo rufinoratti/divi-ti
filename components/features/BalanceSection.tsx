@@ -35,10 +35,13 @@ function parsePaymentAmount(value: string) {
   return /^\d+(?:\.\d{1,2})?$/.test(normalized) ? Number(normalized) : Number.NaN;
 }
 
+const INITIAL_PAYMENT_HISTORY_LIMIT = 4;
+
 export function BalanceSection({ members, movements, obligations, payments, groupId, currentMemberId, onPaymentChanged }: BalanceSectionProps) {
   const [selectedObligationId, setSelectedObligationId] = useState('');
   const [paymentDialogOpen, setPaymentDialogOpen] = useState(false);
   const [paymentAmount, setPaymentAmount] = useState('');
+  const [showAllPaymentHistory, setShowAllPaymentHistory] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
   const currentObligations = obligations.filter((obligation) => (
@@ -108,6 +111,13 @@ export function BalanceSection({ members, movements, obligations, payments, grou
   const memberSummaries = summarizeMemberObligations(members, obligations);
   const netBalances = calculateNetMemberBalances(members, movements, payments);
   const settlementPlan = suggestMinimumTransfers(netBalances);
+  const sortedPayments = [...payments].sort((left, right) => (
+    Date.parse(right.createdAt) - Date.parse(left.createdAt)
+    || right.id.localeCompare(left.id)
+  ));
+  const visiblePayments = showAllPaymentHistory
+    ? sortedPayments
+    : sortedPayments.slice(0, INITIAL_PAYMENT_HISTORY_LIMIT);
 
   return (
     <section className="mt-8" aria-labelledby="balance-title">
@@ -197,6 +207,12 @@ export function BalanceSection({ members, movements, obligations, payments, grou
               && payment.to === obligation.to
               && payment.status === 'pendiente'
             ));
+            const rejectedPayment = payments.some((payment) => (
+              payment.movementId === obligation.movementId
+              && payment.from === obligation.from
+              && payment.to === obligation.to
+              && payment.status === 'rechazada'
+            ));
             const canPay = isOwing && obligation.availableAmount > 0 && !pendingPayment && Boolean(creditor?.userId);
 
             return (
@@ -249,6 +265,12 @@ export function BalanceSection({ members, movements, obligations, payments, grou
                     debtorName={debtor?.name ?? 'La otra persona'}
                     onResolved={onPaymentChanged}
                   />
+                )}
+
+                {rejectedPayment && isOwing && !pendingPayment && obligation.availableAmount > 0 && (
+                  <p role="status" className="mt-3 text-xs leading-5 text-[#8a5a00]">
+                    El aviso anterior fue rechazado. La deuda sigue pendiente; podés informar un nuevo pago cuando lo hayas realizado.
+                  </p>
                 )}
 
                 {canPay && (
@@ -354,8 +376,8 @@ export function BalanceSection({ members, movements, obligations, payments, grou
       {payments.length > 0 && (
         <section className="mt-7" aria-labelledby="payments-title">
           <h2 id="payments-title" className="text-xl font-bold tracking-[-0.035em]">Historial de pagos</h2>
-          <div className="mt-4 space-y-3">
-            {payments.map((payment) => {
+          <div id="payment-history-list" className="mt-4 space-y-3">
+            {visiblePayments.map((payment) => {
               const from = members.find((member) => member.id === payment.from);
               const to = members.find((member) => member.id === payment.to);
               const movementName = movements.find((movement) => movement.id === payment.movementId)?.description;
@@ -385,6 +407,17 @@ export function BalanceSection({ members, movements, obligations, payments, grou
               );
             })}
           </div>
+          {sortedPayments.length > INITIAL_PAYMENT_HISTORY_LIMIT && (
+            <button
+              type="button"
+              aria-expanded={showAllPaymentHistory}
+              aria-controls="payment-history-list"
+              onClick={() => setShowAllPaymentHistory((showAll) => !showAll)}
+              className="mt-4 min-h-11 w-full rounded-full border border-[#e7e7e7] px-4 text-sm font-bold text-[#594ff4] transition hover:bg-[#f6f6f6]"
+            >
+              {showAllPaymentHistory ? 'Mostrar menos' : 'Mostrar más'}
+            </button>
+          )}
         </section>
       )}
 

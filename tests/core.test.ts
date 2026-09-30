@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import { createMovementSchema } from '@/lib/api/schemas';
 import {
+  calculateMovementObligations,
   calculateNetMemberBalances,
   splitAmountEqually,
   splitAmountEquallyByMemberId,
@@ -160,6 +161,53 @@ describe('net balance and settlement suggestions', () => {
 
     expect(calculateNetMemberBalances(twoMembers, [twoPersonExpense], [payment]).map((balance) => balance.amount)).toEqual([0, 0]);
     expect(twoPersonExpense.amount).toBe(10);
+  });
+
+  it('returns a rejected payment to the available debt so the payer can report again', () => {
+    const rejectedPayment: SettlementPayment = {
+      id: 'payment-rejected', groupId: 'group-1', movementId: sharedExpense.id,
+      from: 'member-juan', to: 'member-ana', amount: 30, status: 'rechazada',
+      reportedBy: 'user-juan', createdAt: '2026-09-30T12:02:00.000Z',
+      resolvedBy: 'user-ana', resolvedAt: '2026-09-30T12:03:00.000Z',
+    };
+
+    const afterRejection = calculateMovementObligations(members, [sharedExpense], [rejectedPayment])
+      .find((obligation) => obligation.from === 'member-juan' && obligation.to === 'member-ana');
+    expect(afterRejection?.availableAmount).toBe(30);
+
+    const retry: SettlementPayment = {
+      ...rejectedPayment,
+      id: 'payment-retry',
+      status: 'pendiente',
+      resolvedBy: null,
+      resolvedAt: null,
+    };
+    const afterRetry = calculateMovementObligations(members, [sharedExpense], [rejectedPayment, retry])
+      .find((obligation) => obligation.from === 'member-juan' && obligation.to === 'member-ana');
+    expect(afterRetry?.pendingAmount).toBe(30);
+    expect(afterRetry?.availableAmount).toBe(0);
+  });
+
+  it('keeps a fully confirmed debt closed despite a later rejected duplicate report', () => {
+    const confirmedPayment: SettlementPayment = {
+      id: 'payment-confirmed', groupId: 'group-1', movementId: sharedExpense.id,
+      from: 'member-juan', to: 'member-ana', amount: 30, status: 'confirmada',
+      reportedBy: 'user-juan', createdAt: '2026-09-30T12:00:00.000Z',
+      resolvedBy: 'user-ana', resolvedAt: '2026-09-30T12:01:00.000Z',
+    };
+    const rejectedDuplicate: SettlementPayment = {
+      ...confirmedPayment,
+      id: 'payment-rejected-duplicate',
+      status: 'rechazada',
+      createdAt: '2026-09-30T12:02:00.000Z',
+      resolvedAt: '2026-09-30T12:03:00.000Z',
+    };
+
+    const obligation = calculateMovementObligations(members, [sharedExpense], [confirmedPayment, rejectedDuplicate])
+      .find((item) => item.from === 'member-juan' && item.to === 'member-ana');
+    expect(obligation?.confirmedAmount).toBe(30);
+    expect(obligation?.remainingAmount).toBe(0);
+    expect(obligation?.availableAmount).toBe(0);
   });
 
   it('finds a minimum two-transfer settlement for two debtors and two creditors', () => {
