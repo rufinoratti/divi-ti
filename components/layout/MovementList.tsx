@@ -25,16 +25,18 @@ export function MovementList({
 }: MovementListProps) {
   if (!movements.length) {
     return (
-      <div className="rounded-[28px] bg-[#f6f6f6] px-5 py-9 text-center">
-        <ReceiptTextIcon aria-hidden="true" size={24} className="mx-auto text-[#594ff4]" />
-        <p className="mt-3 text-sm font-bold">{emptyLabel}</p>
-        <p className="mt-1 text-sm text-[#5d5d5d]">Agregá un gasto o préstamo para ver el balance.</p>
+      <div className="divi-surface-muted flex flex-col items-center px-5 py-8 text-center">
+        <span className="grid size-12 place-items-center rounded-2xl border border-line bg-white text-brand">
+          <ReceiptTextIcon aria-hidden="true" size={21} strokeWidth={1.8} />
+        </span>
+        <p className="mt-4 text-sm font-bold text-ink">{emptyLabel}</p>
+        <p className="mt-1 max-w-[18rem] text-sm leading-5 text-copy-muted">Agregá un gasto o préstamo para ver el balance.</p>
       </div>
     );
   }
 
   return (
-    <div className="space-y-3">
+    <div className="app-list divide-y divide-line">
       {movements.map((movement) => (
         <MovementItem key={movement.id} movement={movement} members={members} currentMemberId={currentMemberId} currentMemberIds={currentMemberIds} onEdit={onEdit} isLocked={lockedMovementIds.includes(movement.id)} />
       ))}

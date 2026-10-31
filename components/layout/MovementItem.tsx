@@ -3,7 +3,7 @@
 import { type LedgerMovement, type Member } from '@/lib/ledger';
 import { MovementIcon } from '@/components/layout/MovementIcon';
 import { formatARS } from '@/lib/utils';
-import { PencilIcon } from 'lucide-react';
+import { ArrowDownLeftIcon, ArrowUpRightIcon, PencilIcon } from 'lucide-react';
 
 interface MovementItemProps {
   movement: LedgerMovement;
@@ -28,20 +28,23 @@ export function MovementItem({ movement, members, currentMemberId, currentMember
   const detail = movement.kind === 'loan'
     ? `${payerName} le prestó a ${recipient?.name ?? 'integrante'}`
     : `Pagó ${payerName} - dividido entre ${movement.participants.length}`;
+  const DirectionIcon = isPositive ? ArrowDownLeftIcon : ArrowUpRightIcon;
 
   return (
-    <article className="flex items-center gap-3 rounded-[24px] border border-[#e7e7e7] bg-white p-4">
+    <article className="movement-row flex items-center gap-3 px-4 py-3.5">
       <MovementIcon category={movement.category} />
       <div className="min-w-0 flex-1">
-        <div className="flex items-start justify-between gap-3">
-          <p className="whitespace-pre-line text-sm font-bold">{movement.description}</p>
-          <p className={`shrink-0 text-sm font-bold tabular-nums ${isPositive ? 'text-[#594ff4]' : 'text-[#1f1f1f]'}`}>
-            {isPositive ? '+' : '-'}{formatARS(movement.amount)}
-          </p>
-        </div>
-        <p className="mt-1 truncate text-xs text-[#5d5d5d]">
+        <p className="whitespace-pre-line break-words text-sm font-bold leading-5 text-ink">{movement.description}</p>
+        <p className="mt-1 truncate text-xs leading-4 text-copy-muted">
           {detail}{movement.groupName ? ` · ${movement.groupName}` : ''}
         </p>
+      </div>
+      <div className="shrink-0 text-right">
+        <p className="text-sm font-bold tabular-nums text-ink">{formatARS(movement.amount)}</p>
+        <span className={`mt-1 inline-flex items-center justify-end gap-0.5 text-[0.68rem] font-bold tabular-nums ${isPositive ? 'text-success' : 'text-danger'}`}>
+          <DirectionIcon aria-hidden="true" size={13} strokeWidth={2} />
+          {isPositive ? '+' : '−'}
+        </span>
       </div>
       {onEdit && (
         <button
@@ -50,9 +53,9 @@ export function MovementItem({ movement, members, currentMemberId, currentMember
           disabled={isLocked}
           title={isLocked ? 'No se puede editar un movimiento con pagos asociados.' : 'Editar movimiento'}
           aria-label={isLocked ? `No se puede editar ${movement.description}: tiene pagos asociados` : `Editar ${movement.description}`}
-          className="grid size-10 shrink-0 place-items-center rounded-full text-[#594ff4] transition hover:bg-[#f1f0ff] active:scale-[0.96] disabled:cursor-not-allowed disabled:text-[#aaaaaa]"
+          className="grid size-10 shrink-0 place-items-center rounded-full text-brand transition duration-150 hover:bg-brand-soft active:scale-[0.96] disabled:cursor-not-allowed disabled:text-subtle"
         >
-          <PencilIcon aria-hidden="true" size={17} />
+          <PencilIcon aria-hidden="true" size={17} strokeWidth={1.8} />
         </button>
       )}
     </article>

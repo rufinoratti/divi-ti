@@ -1,6 +1,6 @@
 'use client';
 
-import { ChevronRightIcon } from 'lucide-react';
+import { ArrowDownLeftIcon, ArrowUpRightIcon, CheckIcon, ChevronRightIcon, UsersRoundIcon } from 'lucide-react';
 
 import { type GroupLedger } from '@/lib/ledger';
 import { formatARS } from '@/lib/utils';
@@ -26,21 +26,27 @@ export function AllGroupsBalanceSection({ groups, onOpenGroup }: AllGroupsBalanc
 
   return (
     <section className="mt-8" aria-labelledby="all-balances-title">
-      <h1 id="all-balances-title" className="text-3xl font-bold tracking-[-0.045em]">Balance general</h1>
-      <p className="mt-2 text-sm leading-6 text-[#5d5d5d]">Ves lo que debés y te deben en cada grupo, gasto por gasto.</p>
+      <h1 id="all-balances-title" className="divi-page-title">Balance general</h1>
+      <p className="mt-2 text-sm leading-6 text-copy-muted">Ves lo que debés y te deben en cada grupo, gasto por gasto.</p>
 
-      <div className="mt-7 grid grid-cols-2 gap-3">
-        <div className="rounded-[24px] bg-[#f6f6f6] p-4">
-          <p className="text-xs font-medium text-[#5d5d5d]">Te deben</p>
-          <p className="mt-2 text-xl font-bold tabular-nums">{formatARS(totalOwed)}</p>
+      <div className="mt-7 grid grid-cols-1 gap-3 min-[400px]:grid-cols-2">
+        <div className="rounded-2xl border border-line bg-white p-4">
+          <p className="flex items-center gap-1.5 text-xs font-semibold text-copy-muted">
+            <ArrowDownLeftIcon aria-hidden="true" size={15} className="text-success" />
+            Te deben
+          </p>
+          <p className="mt-2 min-w-0 break-words text-base font-bold tracking-[-0.04em] tabular-nums sm:text-xl">{formatARS(totalOwed)}</p>
         </div>
-        <div className="rounded-[24px] bg-[#f6f6f6] p-4">
-          <p className="text-xs font-medium text-[#5d5d5d]">Debés</p>
-          <p className="mt-2 text-xl font-bold tabular-nums">{formatARS(totalOwing)}</p>
+        <div className="rounded-2xl border border-line bg-white p-4">
+          <p className="flex items-center gap-1.5 text-xs font-semibold text-copy-muted">
+            <ArrowUpRightIcon aria-hidden="true" size={15} className="text-danger" />
+            Debés
+          </p>
+          <p className="mt-2 min-w-0 break-words text-base font-bold tracking-[-0.04em] tabular-nums sm:text-xl">{formatARS(totalOwing)}</p>
         </div>
       </div>
 
-      <div className="mt-6 space-y-3">
+      <div className="app-list mt-6 divide-y divide-line">
         {groups.map((group) => {
           const owes = group.currentMemberId
             ? group.obligations
@@ -62,31 +68,35 @@ export function AllGroupsBalanceSection({ groups, onOpenGroup }: AllGroupsBalanc
           const toMember = group.members.find((member) => member.id === nextOwedToMe?.from);
 
           return (
-            <article key={group.id} className="rounded-[26px] border border-[#e7e7e7] p-5">
-              <div className="flex items-start justify-between gap-4">
-                <div className="min-w-0">
-                  <h2 className="truncate font-bold">{group.name}</h2>
-                  <p className="mt-1 text-sm text-[#5d5d5d]">
-                    {owes <= 0 && owed <= 0
-                      ? 'Al día'
-                      : [owes > 0 ? `Debés ${formatARS(owes)}` : '', owed > 0 ? `Te deben ${formatARS(owed)}` : ''].filter(Boolean).join(' · ')}
-                  </p>
+            <article key={group.id} className="px-4 py-4">
+              <div className="flex items-center gap-3">
+                <span className="grid size-11 shrink-0 place-items-center rounded-[16px] bg-brand-soft text-brand">
+                  <UsersRoundIcon aria-hidden="true" size={19} strokeWidth={1.8} />
+                </span>
+                <div className="min-w-0 flex-1">
+                  <h2 className="truncate text-sm font-bold">{group.name}</h2>
+                  <p className="mt-0.5 text-xs text-copy-muted">{group.members.length} {group.members.length === 1 ? 'persona' : 'personas'}</p>
                 </div>
               </div>
+              <div className="mt-3 flex flex-wrap gap-2">
+                {owes > 0 && <span className="inline-flex min-h-8 items-center gap-1 rounded-full bg-[#fff8f7] px-3 text-xs font-bold text-danger"><ArrowUpRightIcon aria-hidden="true" size={14} />Debés {formatARS(owes)}</span>}
+                {owed > 0 && <span className="inline-flex min-h-8 items-center gap-1 rounded-full bg-[#edf8f0] px-3 text-xs font-bold text-success"><ArrowDownLeftIcon aria-hidden="true" size={14} />Te deben {formatARS(owed)}</span>}
+                {owes <= 0 && owed <= 0 && <span className="inline-flex min-h-8 items-center gap-1 rounded-full bg-surface px-3 text-xs font-semibold text-copy-muted"><CheckIcon aria-hidden="true" size={14} />Al día</span>}
+              </div>
               {nextOwedByMe && (
-                <p className="mt-3 whitespace-pre-line text-xs leading-5 text-[#5d5d5d]">
+                <p className="mt-3 whitespace-pre-line text-xs leading-5 text-copy-muted">
                   Le debés a {fromMember?.name ?? 'un integrante'} {formatARS(nextOwedByMe.remainingAmount)} por {nextOwedByMe.description}
                 </p>
               )}
               {!nextOwedByMe && nextOwedToMe && (
-                <p className="mt-3 whitespace-pre-line text-xs leading-5 text-[#5d5d5d]">
+                <p className="mt-3 whitespace-pre-line text-xs leading-5 text-copy-muted">
                   {toMember?.name ?? 'Un integrante'} te debe {formatARS(nextOwedToMe.remainingAmount)} por {nextOwedToMe.description}
                 </p>
               )}
               <button
                 type="button"
                 onClick={() => onOpenGroup(group.id)}
-                className="mt-4 inline-flex min-h-11 w-full items-center justify-between rounded-full border border-[#e7e7e7] px-4 text-sm font-bold transition hover:bg-[#f6f6f6]"
+                className="mt-3 inline-flex min-h-10 w-full items-center justify-between rounded-xl bg-surface px-3 text-sm font-bold text-brand transition active:scale-[0.99]"
               >
                 Ver balance del grupo
                 <ChevronRightIcon aria-hidden="true" size={17} />

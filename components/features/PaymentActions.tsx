@@ -52,23 +52,23 @@ export function PaymentConfirmationActions({
 
   return (
     <div className="mt-3">
-      <p className="text-xs font-semibold leading-5 text-[#8a5a00]">
+      <p className="text-xs font-semibold leading-5 text-warning">
         {`${debtorName} avisó un pago de ${formatARS(payment.amount)}. ¿Lo recibiste?`}
       </p>
-      <p className="mt-1 text-xs leading-5 text-[#5d5d5d]">
+      <p className="mt-1 text-xs leading-5 text-copy-muted">
         {`Saldo actual de ${debtorName}: ${formatARS(obligation.remainingAmount)}.`}{' '}
         {amountAfterConfirmation > 0
           ? `Al confirmar, le quedarán ${formatARS(amountAfterConfirmation)} por pagar de este gasto.`
           : 'Al confirmar, queda saldada la deuda de este gasto.'}
         {' '}El saldo no cambia hasta que respondas.
       </p>
-      {error && <p role="alert" className="mt-2 text-xs font-medium leading-5 text-[#b42318]">{error}</p>}
+      {error && <p role="alert" className="mt-2 text-xs font-medium leading-5 text-danger">{error}</p>}
       <div className="mt-3 grid grid-cols-2 gap-2">
         <button
           type="button"
           disabled={busy}
           onClick={() => { void respond('reject'); }}
-          className="inline-flex min-h-10 items-center justify-center gap-1 rounded-full border border-[#e7e7e7] bg-white px-2 text-xs font-bold text-[#5d5d5d] transition hover:bg-[#f6f6f6] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#594ff4] focus-visible:ring-offset-2 disabled:cursor-wait disabled:opacity-50"
+          className="inline-flex min-h-10 items-center justify-center gap-1 rounded-full border border-line bg-white px-2 text-xs font-bold text-copy-muted transition hover:bg-surface focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2 disabled:cursor-wait disabled:opacity-50"
         >
           <XIcon aria-hidden="true" size={14} />
           No lo recibí
@@ -77,7 +77,7 @@ export function PaymentConfirmationActions({
           type="button"
           disabled={busy}
           onClick={() => { void respond('confirm'); }}
-          className="inline-flex min-h-10 items-center justify-center gap-1 rounded-full bg-[#594ff4] px-2 text-xs font-bold text-white transition hover:bg-[#4c42e8] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#594ff4] focus-visible:ring-offset-2 disabled:cursor-wait disabled:opacity-50"
+          className="inline-flex min-h-10 items-center justify-center gap-1 rounded-full bg-brand px-2 text-xs font-bold text-white transition hover:bg-brand-strong focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2 disabled:cursor-wait disabled:opacity-50"
         >
           <CheckIcon aria-hidden="true" size={14} />
           {busy ? 'Guardando…' : 'Sí, lo recibí'}
@@ -118,8 +118,8 @@ export function PendingPaymentsSection({ groups, onPaymentChanged, className = '
   return (
     <section aria-labelledby="pending-payments-title" className={`space-y-3 ${className}`}>
       <div className="flex items-baseline justify-between gap-3">
-        <h2 id="pending-payments-title" className="text-xl font-bold tracking-[-0.035em]">Pagos para confirmar</h2>
-        <span className="shrink-0 text-sm font-semibold text-[#8a5a00]">
+        <h2 id="pending-payments-title" className="divi-section-title">Pagos para confirmar</h2>
+        <span className="shrink-0 text-sm font-semibold text-warning">
           {pendingItems.length} {pendingItems.length === 1 ? 'aviso' : 'avisos'}
         </span>
       </div>
@@ -129,7 +129,7 @@ export function PendingPaymentsSection({ groups, onPaymentChanged, className = '
           <div className="flex items-start justify-between gap-3">
             <div className="min-w-0">
               <h3 className="whitespace-pre-line text-base font-bold">{movement.description}</h3>
-              {groups.length > 1 && <p className="mt-1 text-xs text-[#5d5d5d]">{group.name}</p>}
+              {groups.length > 1 && <p className="mt-1 text-xs text-copy-muted">{group.name}</p>}
             </div>
             <p className="shrink-0 text-base font-bold tabular-nums">{formatARS(payment.amount)}</p>
           </div>

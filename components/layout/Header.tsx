@@ -21,7 +21,7 @@ export function Header({ currentMemberId, members, profileMember, groups, groupI
   const member = members.find((m) => m.id === currentMemberId) ?? profileMember;
 
   return (
-    <header className="flex items-center justify-between">
+    <header className="app-header flex items-center justify-between gap-3">
       <div className="flex items-center gap-3">
         <Avatar member={member} />
         <div>

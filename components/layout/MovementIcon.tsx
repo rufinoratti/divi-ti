@@ -27,8 +27,8 @@ export function MovementIcon({ category }: MovementIconProps) {
   const Icon = categoryToIcon[category] ?? HandCoinsIcon;
 
   return (
-    <span className="grid size-10 shrink-0 place-items-center rounded-2xl bg-white text-[#594ff4] ring-1 ring-[#e7e7e7]">
-      <Icon aria-hidden="true" size={19} strokeWidth={1.8} />
+    <span className="grid size-11 shrink-0 place-items-center rounded-[16px] bg-brand-soft text-brand">
+      <Icon aria-hidden="true" size={19} strokeWidth={1.75} />
     </span>
   );
 }

@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState, type FormEvent } from 'react';
+import { CheckIcon, CircleAlertIcon, LoaderCircleIcon } from 'lucide-react';
 
 import { parseCurrencyAmount } from '@/lib/movement-draft';
 
@@ -56,23 +57,38 @@ export function MonthlyIncomeSettings() {
   }
 
   return (
-    <section className="mt-7 rounded-[30px] border border-[#e7e7e7] p-6" aria-labelledby="income-title">
-      <h2 id="income-title" className="text-xl font-bold tracking-[-0.035em]">Ingreso mensual opcional</h2>
-      <p className="mt-2 text-sm leading-6 text-[#5d5d5d]">
+    <section className="mt-7 rounded-[24px] border border-line p-6" aria-labelledby="income-title">
+      <h2 id="income-title" className="divi-section-title">Ingreso mensual opcional</h2>
+      <p className="mt-2 text-sm leading-6 text-copy-muted">
         Solo se usa si elegís dividir un gasto proporcionalmente. Lo podés ver y cambiar únicamente desde tu cuenta.
       </p>
-      <form onSubmit={saveIncome} className="mt-4 space-y-3">
-        <label htmlFor="monthly-income" className="block text-sm font-medium text-[#5d5d5d]">Ingreso mensual (ARS)</label>
-        <div className="flex h-12 items-center rounded-2xl border border-[#e7e7e7] bg-white focus-within:border-[#594ff4]">
-          <span aria-hidden="true" className="pl-4 text-sm font-bold text-[#5d5d5d]">$</span>
-          <input id="monthly-income" inputMode="decimal" value={income} onChange={(event) => setIncome(event.target.value)} disabled={isLoading || isSaving} placeholder="Dejalo vacío si no querés usarlo" className="h-full min-w-0 flex-1 rounded-2xl px-3 text-sm outline-none placeholder:text-xs placeholder:text-[#888888] disabled:opacity-60" />
-          <span className="pr-4 text-xs text-[#888888]">ARS</span>
-        </div>
-        {error && <p role="alert" className="text-sm font-medium text-[#b42318]">{error}</p>}
-        {notice && <p role="status" className="text-sm font-medium text-[#247446]">{notice}</p>}
-        <button type="submit" disabled={isLoading || isSaving} className="min-h-11 w-full rounded-full border border-[#594ff4] px-4 text-sm font-bold text-[#594ff4] disabled:opacity-50">
-          {isLoading ? 'Cargando…' : isSaving ? 'Guardando…' : 'Guardar ingreso'}
-        </button>
+      <form onSubmit={saveIncome} className="mt-4 space-y-3" aria-busy={isLoading || isSaving}>
+        {isLoading
+          ? <p className="text-sm font-medium text-copy-muted">Ingreso mensual (ARS)</p>
+          : <label htmlFor="monthly-income" className="block text-sm font-medium text-copy-muted">Ingreso mensual (ARS)</label>}
+        {isLoading ? (
+          <>
+            <div className="space-y-3" aria-hidden="true">
+              <div className="divi-skeleton h-12 rounded-2xl" />
+              <div className="divi-skeleton h-11 rounded-full" />
+            </div>
+            <p role="status" className="sr-only">Cargando tu ingreso mensual…</p>
+          </>
+        ) : (
+          <>
+            <div className="flex h-12 items-center rounded-2xl border border-line bg-white transition focus-within:border-brand focus-within:ring-2 focus-within:ring-brand/10">
+              <span aria-hidden="true" className="pl-4 text-sm font-bold text-copy-muted">$</span>
+              <input id="monthly-income" inputMode="decimal" value={income} onChange={(event) => setIncome(event.target.value)} disabled={isSaving} placeholder="Dejalo vacío si no querés usarlo" className="h-full min-w-0 flex-1 rounded-2xl px-3 text-sm outline-none placeholder:text-xs placeholder:text-copy-muted disabled:opacity-60" />
+              <span className="pr-4 text-xs text-copy-muted">ARS</span>
+            </div>
+            {error && <p role="alert" className="flex items-start gap-2 rounded-xl bg-[#fef4f4] px-3 py-2 text-sm font-medium text-danger"><CircleAlertIcon aria-hidden="true" className="mt-0.5 shrink-0" size={16} />{error}</p>}
+            {notice && <p role="status" className="flex items-center gap-2 rounded-xl bg-[#edf8f0] px-3 py-2 text-sm font-medium text-success"><CheckIcon aria-hidden="true" size={16} />{notice}</p>}
+            <button type="submit" disabled={isSaving} className="flex min-h-11 w-full items-center justify-center gap-2 rounded-full border border-brand px-4 text-sm font-bold text-brand transition active:scale-[0.98] disabled:opacity-50">
+              {isSaving && <LoaderCircleIcon aria-hidden="true" size={16} className="animate-spin motion-reduce:animate-none" />}
+              {isSaving ? 'Guardando…' : 'Guardar ingreso'}
+            </button>
+          </>
+        )}
       </form>
     </section>
   );

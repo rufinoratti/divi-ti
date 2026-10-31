@@ -1,6 +1,6 @@
 export function AuthLoading() {
   return (
-    <main className="auth-page min-h-[100dvh] text-[#1f1f1f]" aria-busy="true" aria-label="Preparando la pantalla de acceso">
+    <main className="auth-page min-h-[100dvh] text-ink" aria-busy="true" aria-label="Preparando la pantalla de acceso">
       <div className="auth-loading-layout mx-auto min-h-[100dvh] max-w-[1120px] px-5 py-5 sm:px-8 sm:py-8">
         <header className="auth-loading-topbar">
           <div className="auth-skeleton auth-skeleton-brand" />

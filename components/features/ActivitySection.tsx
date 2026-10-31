@@ -30,13 +30,13 @@ export function ActivitySection({
 }: ActivitySectionProps) {
   return (
     <section className="mt-8" aria-labelledby="activity-title">
-      <h1 id="activity-title" className="text-3xl font-bold tracking-[-0.045em]">Actividad</h1>
-      <p className="mt-2 text-sm leading-6 text-[#5d5d5d]">
+      <h1 id="activity-title" className="divi-page-title">Actividad</h1>
+      <p className="mt-2 text-sm leading-6 text-copy-muted">
         {allGroups
           ? 'Movimientos de todos tus grupos, ordenados por fecha.'
           : 'Cada carga actualiza el balance del grupo al instante.'}
       </p>
-      <div className="mt-6 flex gap-2 overflow-x-auto pb-1" aria-label="Filtros de actividad">
+      <div className="mt-5 flex flex-wrap gap-2" role="group" aria-label="Filtros de actividad">
         {[
           { id: 'all' as const, label: 'Todos' },
           { id: 'expense' as const, label: 'Gastos' },
@@ -46,13 +46,14 @@ export function ActivitySection({
             key={filter.id}
             type="button"
             onClick={() => onActivityFilterChange(filter.id)}
-            className={`whitespace-nowrap rounded-full px-4 py-2 text-sm font-bold transition active:scale-[0.98] ${activityFilter === filter.id ? 'bg-[#594ff4] text-white' : 'bg-[#f6f6f6] text-[#5d5d5d]'}`}
+            aria-pressed={activityFilter === filter.id}
+            className={`min-h-10 whitespace-nowrap rounded-full px-4 text-sm font-semibold transition active:scale-[0.98] ${activityFilter === filter.id ? 'bg-brand text-white' : 'bg-surface text-copy-muted'}`}
           >
             {filter.label}
           </button>
         ))}
       </div>
-      <div className="mt-6">
+      <div className="mt-5">
         <MovementList movements={movements} members={members} currentMemberId={currentMemberId} currentMemberIds={currentMemberIds} emptyLabel="No hay movimientos para este filtro." onEdit={onEditMovement} lockedMovementIds={lockedMovementIds} />
       </div>
     </section>

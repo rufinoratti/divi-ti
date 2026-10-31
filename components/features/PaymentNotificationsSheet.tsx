@@ -1,7 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { BellIcon, CheckIcon, XIcon } from 'lucide-react';
+import { BellIcon, CheckIcon, InboxIcon, XIcon } from 'lucide-react';
 
 import { type PaymentNotification } from '@/lib/ledger';
 import { formatARS } from '@/lib/utils';
@@ -132,11 +132,11 @@ export function PaymentNotificationsSheet({ onPaymentUpdated }: PaymentNotificat
     <Sheet open={open} onOpenChange={(nextOpen) => { void handleOpenChange(nextOpen); }}>
       <SheetTrigger
         aria-label={unreadCount > 0 ? `${unreadCount} notificaciones sin leer` : 'Notificaciones'}
-        className="relative grid size-11 place-items-center rounded-full border border-[#e7e7e7] bg-white text-[#1f1f1f] transition active:scale-[0.96]"
+        className="relative grid size-11 place-items-center rounded-full border border-line bg-white text-ink transition active:scale-[0.96]"
       >
         <BellIcon aria-hidden="true" size={19} strokeWidth={1.8} />
         {unreadCount > 0 && (
-          <span aria-hidden="true" className="absolute -right-1 -top-1 grid min-h-5 min-w-5 place-items-center rounded-full bg-[#b42318] px-1 text-[10px] font-bold text-white">
+          <span aria-hidden="true" className="absolute -right-1 -top-1 grid min-h-5 min-w-5 place-items-center rounded-full bg-danger px-1 text-[10px] font-bold text-white">
             {unreadCount > 9 ? '9+' : unreadCount}
           </span>
         )}
@@ -145,40 +145,62 @@ export function PaymentNotificationsSheet({ onPaymentUpdated }: PaymentNotificat
       <SheetContent
         side="bottom"
         showCloseButton={false}
-        className="max-h-[82dvh] gap-0 overflow-hidden rounded-t-[28px] border-[#e7e7e7] bg-white pb-[env(safe-area-inset-bottom)]"
+        className="max-h-[82dvh] gap-0 overflow-hidden rounded-t-[28px] border-line bg-white pb-[env(safe-area-inset-bottom)]"
       >
-        <SheetHeader className="relative px-5 pb-4 pt-6 pr-16">
-          <SheetTitle className="text-xl font-bold tracking-[-0.035em]">Notificaciones</SheetTitle>
-          <SheetDescription className="leading-6 text-[#5d5d5d]">
+        <SheetHeader className="relative px-5 pb-4 pt-3 pr-16">
+          <span className="mx-auto mb-3 h-1 w-10 rounded-full bg-[#d9d9df]" aria-hidden="true" />
+          <SheetTitle className="divi-section-title text-lg font-bold">Notificaciones</SheetTitle>
+          <SheetDescription className="leading-6 text-copy-muted">
             Avisos de pagos y respuestas de tu grupo.
           </SheetDescription>
           <SheetClose
             aria-label="Cerrar"
-            className="absolute right-5 top-5 grid size-10 place-items-center rounded-full bg-[#f6f6f6] text-[#1f1f1f]"
+            className="absolute right-5 top-5 grid size-10 place-items-center rounded-full bg-surface text-ink"
           >
             <XIcon aria-hidden="true" size={18} />
           </SheetClose>
         </SheetHeader>
 
-        <div className="max-h-[64dvh] space-y-3 overflow-y-auto px-5 pb-6">
-          {error && <p role="alert" className="rounded-2xl bg-[#fef4f4] p-3 text-sm font-medium text-[#b42318]">{error}</p>}
-          {isLoading && <p className="py-8 text-center text-sm text-[#5d5d5d]">Cargando notificaciones…</p>}
+        <div className="max-h-[64dvh] space-y-3 overflow-y-auto px-5 pb-6" aria-busy={isLoading}>
+          {error && <p role="alert" className="rounded-2xl bg-[#fef4f4] p-3 text-sm font-medium text-danger">{error}</p>}
+          {isLoading && (
+            <div className="space-y-3 py-1" aria-label="Cargando notificaciones" role="status">
+              {[0, 1, 2].map((item) => (
+                <div key={item} className="rounded-2xl border border-line p-4">
+                  <div className="divi-skeleton h-4 w-2/5 rounded-full" />
+                  <div className="mt-3 space-y-2">
+                    <div className="divi-skeleton h-3 w-full rounded-full" />
+                    <div className="divi-skeleton h-3 w-4/5 rounded-full" />
+                  </div>
+                  <div className="mt-4 grid grid-cols-2 gap-2">
+                    <div className="divi-skeleton h-11 rounded-full" />
+                    <div className="divi-skeleton h-11 rounded-full" />
+                  </div>
+                </div>
+              ))}
+              <span className="sr-only">Cargando notificaciones…</span>
+            </div>
+          )}
           {!isLoading && notifications.length === 0 && !error && (
-            <p className="rounded-2xl bg-[#f6f6f6] px-4 py-8 text-center text-sm text-[#5d5d5d]">
-              No hay notificaciones por ahora.
-            </p>
+            <div className="flex flex-col items-center rounded-2xl bg-surface px-5 py-8 text-center">
+              <span className="grid size-11 place-items-center rounded-2xl bg-white text-brand">
+                <InboxIcon aria-hidden="true" size={20} strokeWidth={1.8} />
+              </span>
+              <p className="mt-3 text-sm font-semibold text-ink">Todo al día</p>
+              <p className="mt-1 text-sm text-copy-muted">No hay notificaciones por ahora.</p>
+            </div>
           )}
 
           {notifications.map((notification) => {
             const isPendingIncoming = notification.type === 'pago_informado' && notification.payment.status === 'pendiente';
             const isBusy = busyPaymentId === notification.payment.id;
             return (
-              <article key={notification.id} className="rounded-2xl border border-[#e7e7e7] p-4">
+              <article key={notification.id} className="rounded-2xl border border-line p-4">
                 <p className="text-sm font-bold">{notification.payment.groupName}</p>
-                <p className="mt-1 text-sm leading-6 text-[#5d5d5d]">{notificationMessage(notification)}</p>
+                <p className="mt-1 text-sm leading-6 text-copy-muted">{notificationMessage(notification)}</p>
                 {isPendingIncoming ? (
                   <>
-                    <p className="mt-2 text-xs text-[#888888]">
+                    <p className="mt-2 text-xs text-copy-muted">
                       El balance queda igual hasta que confirmes la recepción.
                     </p>
                     <div className="mt-4 grid grid-cols-2 gap-2">
@@ -186,7 +208,7 @@ export function PaymentNotificationsSheet({ onPaymentUpdated }: PaymentNotificat
                         type="button"
                         disabled={isBusy}
                         onClick={() => { void handlePaymentResponse(notification, 'reject'); }}
-                        className="inline-flex min-h-11 items-center justify-center gap-1 rounded-full border border-[#e7e7e7] px-3 text-sm font-bold text-[#5d5d5d] transition hover:bg-[#f6f6f6] disabled:opacity-50"
+                        className="inline-flex min-h-11 items-center justify-center gap-1 rounded-full border border-line px-3 text-sm font-bold text-copy-muted transition hover:bg-surface disabled:opacity-50"
                       >
                         <XIcon aria-hidden="true" size={15} />
                         No lo recibí
@@ -195,7 +217,7 @@ export function PaymentNotificationsSheet({ onPaymentUpdated }: PaymentNotificat
                         type="button"
                         disabled={isBusy}
                         onClick={() => { void handlePaymentResponse(notification, 'confirm'); }}
-                        className="inline-flex min-h-11 items-center justify-center gap-1 rounded-full bg-[#594ff4] px-3 text-sm font-bold text-white transition hover:bg-[#4c42e8] disabled:opacity-50"
+                        className="inline-flex min-h-11 items-center justify-center gap-1 rounded-full bg-brand px-3 text-sm font-bold text-white transition hover:bg-brand-strong disabled:opacity-50"
                       >
                         <CheckIcon aria-hidden="true" size={15} />
                         {isBusy ? 'Guardando…' : 'Confirmar'}
@@ -203,7 +225,7 @@ export function PaymentNotificationsSheet({ onPaymentUpdated }: PaymentNotificat
                     </div>
                   </>
                 ) : (
-                  <p className="mt-2 text-xs font-semibold text-[#5d5d5d]">
+                  <p className="mt-2 text-xs font-semibold text-copy-muted">
                     {notification.type === 'pago_informado'
                       ? notification.payment.status === 'confirmada'
                         ? 'Pago confirmado por vos'

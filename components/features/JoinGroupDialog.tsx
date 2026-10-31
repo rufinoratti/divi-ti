@@ -67,18 +67,18 @@ export function JoinGroupDialog({ compact = false, compactLabel = 'Unirme con un
       <DialogTrigger
         className={compact
           ? compactVariant === 'soft'
-            ? 'inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-full border border-[#e4dfff] bg-[#efedff] px-3 text-sm font-bold text-[#5144d8] transition hover:bg-[#e6e2ff] active:scale-[0.98]'
-            : 'inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-2xl border border-[#e7e7e7] px-5 text-sm font-bold text-[#1f1f1f] transition active:scale-[0.98]'
-          : 'mt-5 inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-full border border-[#e7e7e7] px-5 text-sm font-bold text-[#1f1f1f] transition active:scale-[0.98]'}
+            ? 'inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-full border border-[#e4dfff] bg-brand-soft px-3 text-sm font-bold text-[#5144d8] transition hover:bg-[#e6e2ff] active:scale-[0.98]'
+            : 'inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-2xl border border-line px-5 text-sm font-bold text-ink transition active:scale-[0.98]'
+          : 'mt-5 inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-full border border-line px-5 text-sm font-bold text-ink transition active:scale-[0.98]'}
       >
         <KeyRoundIcon aria-hidden="true" size={17} />
         {compactLabel}
       </DialogTrigger>
 
-      <DialogContent showCloseButton={false} className="max-w-[calc(100%-2rem)] rounded-[28px] bg-white p-6 sm:max-w-md">
+      <DialogContent showCloseButton={false} className="max-w-[calc(100%-2rem)] rounded-[24px] bg-white p-6 sm:max-w-md">
         <DialogClose
           aria-label="Cerrar"
-          className="absolute right-4 top-4 grid size-10 place-items-center rounded-full bg-[#f6f6f6] text-[#1f1f1f]"
+          className="absolute right-4 top-4 grid size-10 place-items-center rounded-full bg-surface text-ink"
         >
           <XIcon aria-hidden="true" size={18} />
           <span className="sr-only">Cerrar</span>
@@ -86,13 +86,13 @@ export function JoinGroupDialog({ compact = false, compactLabel = 'Unirme con un
         <form onSubmit={handleSubmit}>
           <DialogHeader>
             <DialogTitle className="text-2xl font-bold tracking-[-0.04em]">Unite a un grupo</DialogTitle>
-            <DialogDescription className="mt-2 leading-6 text-[#5d5d5d]">
+            <DialogDescription className="mt-2 leading-6 text-copy-muted">
               Ingresá el código de 12 caracteres que te compartieron.
             </DialogDescription>
           </DialogHeader>
 
           <div className="mt-6">
-            <label htmlFor={codeFieldId} className="block text-sm font-medium text-[#5d5d5d]">Código del grupo</label>
+            <label htmlFor={codeFieldId} className="block text-sm font-medium text-copy-muted">Código del grupo</label>
             <input
               id={codeFieldId}
               name="code"
@@ -107,19 +107,19 @@ export function JoinGroupDialog({ compact = false, compactLabel = 'Unirme con un
               placeholder="A3F9C821B70D"
               aria-describedby={`${codeFieldId}-hint`}
               required
-              className="mt-1 h-14 w-full rounded-2xl border border-[#e7e7e7] bg-white px-4 font-mono text-lg font-bold tracking-[0.12em] outline-none placeholder:text-sm placeholder:font-normal placeholder:tracking-normal focus:border-[#594ff4]"
+              className="mt-1 h-14 w-full rounded-2xl border border-line bg-white px-4 font-mono text-lg font-bold tracking-[0.12em] outline-none placeholder:text-sm placeholder:font-normal placeholder:tracking-normal focus:border-brand"
             />
-            <p id={`${codeFieldId}-hint`} className="mt-2 text-xs leading-5 text-[#888888]">
+            <p id={`${codeFieldId}-hint`} className="mt-2 text-xs leading-5 text-copy-muted">
               Usá números del 0 al 9 y letras de la A a la F.
             </p>
           </div>
 
-          {error && <p role="alert" className="mt-4 text-sm font-medium text-[#b42318]">{error}</p>}
+          {error && <p role="alert" className="mt-4 text-sm font-medium text-danger">{error}</p>}
 
           <button
             type="submit"
             disabled={isSubmitting || code.length !== 12}
-            className="mt-6 flex min-h-13 w-full items-center justify-center rounded-full bg-[#594ff4] px-5 text-sm font-bold text-white transition active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
+            className="mt-6 flex min-h-13 w-full items-center justify-center rounded-full bg-brand px-5 text-sm font-bold text-white transition active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
           >
             {isSubmitting ? 'Buscando grupo...' : 'Unirme al grupo'}
           </button>

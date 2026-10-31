@@ -20,20 +20,25 @@ import { type LedgerMovement, type MovementKind } from '@/lib/ledger';
 import { GroupOnboarding } from '@/components/features/GroupOnboarding';
 import { GuestOnboarding } from '@/components/features/GuestOnboarding';
 import { EmptyGroupsHome } from '@/components/features/EmptyGroupsHome';
+import { CircleAlertIcon, RefreshCwIcon } from 'lucide-react';
 
 type ActivityFilter = 'all' | LedgerMovement['kind'];
 
 function DataError({ message }: { message: string }) {
   return (
-    <main className="grid min-h-[100dvh] place-items-center bg-white px-6 text-[#1f1f1f]">
-      <section className="max-w-sm text-center" role="alert">
-        <h1 className="text-2xl font-bold tracking-[-0.04em]">No pudimos abrir tu grupo</h1>
-        <p className="mt-3 text-sm leading-6 text-[#5d5d5d]">{message}</p>
+    <main className="divi-page grid place-items-center px-6 pb-[max(1.5rem,env(safe-area-inset-bottom))] pt-[max(1.5rem,env(safe-area-inset-top))]">
+      <section className="w-full max-w-sm rounded-[24px] border border-line bg-white p-6 text-center" role="alert">
+        <span className="mx-auto grid size-12 place-items-center rounded-2xl bg-[#fff8f7] text-danger">
+          <CircleAlertIcon aria-hidden="true" size={22} strokeWidth={1.8} />
+        </span>
+        <h1 className="mt-4 text-2xl font-bold tracking-[-0.04em]">No pudimos abrir tu grupo</h1>
+        <p className="mt-2 text-sm leading-6 text-copy-muted">{message}</p>
         <button
           type="button"
           onClick={() => window.location.reload()}
-          className="mt-6 min-h-12 rounded-full bg-[#594ff4] px-6 text-sm font-bold text-white"
+          className="mt-5 inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-full bg-brand px-6 text-sm font-bold text-white transition active:scale-[0.98]"
         >
+          <RefreshCwIcon aria-hidden="true" size={16} />
           Volver a intentar
         </button>
       </section>
@@ -139,8 +144,8 @@ export default function Home() {
   }
 
   return (
-    <main className="min-h-[100dvh] bg-white text-[#1f1f1f]">
-      <div className="mx-auto min-h-[100dvh] max-w-[500px] px-5 pb-28 pt-6 sm:px-7">
+    <main className="divi-page">
+      <div className="divi-page-shell">
         <Header
           currentMemberId={currentMemberId}
           members={members}
@@ -153,14 +158,15 @@ export default function Home() {
           onPaymentsChanged={refresh}
         />
 
+        <div key={`${groupId ?? 'all'}-${activeTab}`} className="divi-enter">
         {activeTab === 'inicio' && (
           allGroupsView ? (
             <AllGroupsHome groups={groupLedgers} onOpenGroup={(nextGroupId) => openGroup(nextGroupId)} onPaymentChanged={refresh} />
           ) : (
-            <section className="mt-8 space-y-7" aria-labelledby="inicio-title">
+            <section className="mt-7 space-y-5" aria-labelledby="inicio-title">
               <div>
-                <p className="text-[15px] text-[#5d5d5d]">Hola, {currentMember?.name ?? accountName}</p>
-                <h1 id="inicio-title" className="mt-1 text-3xl font-bold tracking-[-0.045em]">Tu resumen del grupo</h1>
+                <p className="text-sm font-medium text-copy-muted">Hola, {currentMember?.name ?? accountName}</p>
+                <h1 id="inicio-title" className="divi-page-title mt-1">Tu resumen del grupo</h1>
               </div>
 
               <PendingPaymentsSection groups={groupLedgers.filter((group) => group.id === groupId)} onPaymentChanged={refresh} />
@@ -168,8 +174,8 @@ export default function Home() {
 
               <section aria-labelledby="recent-title">
                 <div className="mb-4 flex items-end justify-between">
-                  <h2 id="recent-title" className="text-xl font-bold tracking-[-0.035em]">Movimientos recientes</h2>
-                  <button type="button" onClick={() => setActiveTab('actividad')} className="text-sm font-bold text-[#594ff4] active:scale-[0.98]">Ver todos</button>
+                  <h2 id="recent-title" className="divi-section-title">Movimientos recientes</h2>
+                  <button type="button" onClick={() => setActiveTab('actividad')} className="text-sm font-bold text-brand active:scale-[0.98]">Ver todos</button>
                 </div>
                 <MovementList movements={recentMovements} members={members} currentMemberId={currentMemberId} />
               </section>
@@ -221,6 +227,7 @@ export default function Home() {
             canInvite={userId === groupOwnerId}
           />
         )}
+        </div>
       </div>
 
       <Navigation activeTab={activeTab} onTabChange={setActiveTab} />

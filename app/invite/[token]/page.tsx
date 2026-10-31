@@ -62,18 +62,18 @@ export default function InvitePage() {
 
   if (status === 'login') {
     return (
-      <main className="min-h-[100dvh] bg-white px-5 py-12 text-[#1f1f1f]">
+      <main className="min-h-[100dvh] bg-white px-5 pb-[max(3rem,env(safe-area-inset-bottom))] pt-[max(3rem,env(safe-area-inset-top))] text-ink">
         <div className="mx-auto max-w-[500px] space-y-6 text-center">
           <img src="/branding/divi-lockup.png" alt="Divi" className="mx-auto h-10 w-auto object-contain" />
           <div>
             <h1 className="text-3xl font-bold tracking-[-0.05em]">Te invitaron a un grupo</h1>
-            <p className="mt-3 text-[#5d5d5d]">Iniciá sesión o creá tu cuenta para sumarte.</p>
+            <p className="mt-3 text-copy-muted">Iniciá sesión o creá tu cuenta para sumarte.</p>
           </div>
           <div className="grid gap-3">
-            <a href={`/login?next=${encodeURIComponent(nextPath)}`} className="flex min-h-13 items-center justify-center rounded-full bg-[#594ff4] px-5 text-sm font-bold text-white">
+            <a href={`/login?next=${encodeURIComponent(nextPath)}`} className="flex min-h-13 items-center justify-center rounded-full bg-brand px-5 text-sm font-bold text-white">
               Iniciar sesión
             </a>
-            <a href={`/signup?next=${encodeURIComponent(nextPath)}`} className="flex min-h-13 items-center justify-center rounded-full border border-[#e7e7e7] px-5 text-sm font-bold text-[#1f1f1f]">
+            <a href={`/signup?next=${encodeURIComponent(nextPath)}`} className="flex min-h-13 items-center justify-center rounded-full border border-line px-5 text-sm font-bold text-ink">
               Crear cuenta
             </a>
           </div>
@@ -83,12 +83,12 @@ export default function InvitePage() {
   }
 
   return (
-    <main className="min-h-[100dvh] bg-white px-5 py-12 text-[#1f1f1f]">
+    <main className="min-h-[100dvh] bg-white px-5 pb-[max(3rem,env(safe-area-inset-bottom))] pt-[max(3rem,env(safe-area-inset-top))] text-ink">
       <div className="mx-auto max-w-[500px] space-y-5 text-center">
         <img src="/branding/divi-lockup.png" alt="Divi" className="mx-auto h-10 w-auto object-contain" />
         <h1 className="text-3xl font-bold tracking-[-0.05em]">{status === 'success' ? 'Bienvenido al grupo' : 'No pudimos aceptar la invitación'}</h1>
-        <p className="text-[#5d5d5d]">{message}</p>
-        <a href="/" className="inline-flex min-h-13 items-center justify-center rounded-full bg-[#594ff4] px-5 text-sm font-bold text-white">
+        <p className="text-copy-muted">{message}</p>
+        <a href="/" className="inline-flex min-h-13 items-center justify-center rounded-full bg-brand px-5 text-sm font-bold text-white">
           Volver a Divi
         </a>
       </div>

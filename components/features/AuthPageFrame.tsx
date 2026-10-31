@@ -11,7 +11,7 @@ interface AuthPageFrameProps {
 
 export function AuthPageFrame({ title, description, children, footer, note }: AuthPageFrameProps) {
   return (
-    <main className="auth-page min-h-[100dvh] text-[#1f1f1f]">
+    <main className="auth-page min-h-[100dvh] text-ink">
       <div className="auth-layout mx-auto min-h-[100dvh] max-w-[1120px] px-5 py-5 sm:px-8 sm:py-8">
         <header className="auth-topbar">
           <a href="/" className="auth-brand" aria-label="Divi, ir al inicio">
