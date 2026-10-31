@@ -22,7 +22,7 @@ También podés copiar `.env.example` como base.
 
 En un proyecto nuevo creado desde `database/schema.sql`, ejecutá también `supabase/migrations/20260930160051_add_private_income_and_division_methods.sql` para habilitar ingresos privados, métodos de división y sincronización Realtime.
 
-Si el proyecto ya tiene datos, aplicá las migraciones de `supabase/migrations/` que todavía no figuren en su historial, en orden por nombre. No vuelvas a ejecutar migraciones ya aplicadas.
+Si el proyecto ya tiene datos, aplicá las migraciones de `supabase/migrations/` que todavía no figuren en su historial, en orden por nombre. No vuelvas a ejecutar migraciones ya aplicadas. Si ejecutaste una migración desde el SQL Editor, puede no figurar en el historial de Supabase CLI: verificá el esquema y reconciliá el historial antes de desplegar migraciones posteriores con CLI.
 
 La función de reparto proporcional devuelve solo los importes asignados. Las fotos de tickets se procesan en el navegador y no se guardan en Supabase.
 
