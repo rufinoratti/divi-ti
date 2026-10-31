@@ -7,7 +7,7 @@ import {
   supabaseUrl,
 } from '@/lib/supabase/config';
 
-export async function middleware(request: NextRequest) {
+export async function proxy(request: NextRequest) {
   let response = NextResponse.next({ request });
 
   if (!hasSupabaseConfig) return response;
@@ -40,7 +40,7 @@ export async function middleware(request: NextRequest) {
   return response;
 }
 
-export default middleware;
+export default proxy;
 
 export const config = {
   matcher: [
