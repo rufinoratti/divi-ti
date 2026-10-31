@@ -251,7 +251,6 @@ export async function POST(request: NextRequest) {
               schema: receiptOutputSchema,
             },
           },
-          temperature: 0,
           maxOutputTokens: 4096,
         },
       }),
