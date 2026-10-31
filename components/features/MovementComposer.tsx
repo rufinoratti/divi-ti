@@ -406,7 +406,7 @@ export function MovementComposer({ open, onOpenChange, members, currentMemberId,
             <Field label="Foto del ticket (opcional)" htmlFor="receipt-photo">
               <input id="receipt-photo" type="file" accept="image/jpeg,image/png,image/webp" capture="environment" onChange={handleReceiptFile} disabled={isAnalyzingReceipt} className="block w-full rounded-2xl border border-[#e7e7e7] bg-white px-3 py-3 text-sm file:mr-3 file:rounded-full file:border-0 file:bg-[#f1f0ff] file:px-3 file:py-2 file:text-xs file:font-bold file:text-[#594ff4] disabled:opacity-60" />
               {isAnalyzingReceipt && <p className="mt-2 text-xs text-[#5d5d5d]">Analizando el total y los productos con IA…</p>}
-              <p className="mt-2 text-xs leading-5 text-[#777777]">Al elegir la foto, se envía a OpenRouter para detectar el total y los productos con sus precios.</p>
+              <p className="mt-2 text-xs leading-5 text-[#777777]">Al elegir la foto, se envía a Gemini para detectar el total y los productos con sus precios.</p>
               {receiptFile && receiptAnalysisFailed && (
                 <button type="button" onClick={() => { void analyzeReceiptWithAI(receiptFile); }} disabled={isAnalyzingReceipt} className="mt-3 min-h-11 w-full rounded-full border border-[#594ff4] px-4 text-sm font-bold text-[#594ff4] disabled:opacity-50">
                   {isAnalyzingReceipt ? 'Analizando ticket…' : 'Reintentar análisis con IA'}
