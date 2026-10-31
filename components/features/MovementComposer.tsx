@@ -37,6 +37,42 @@ type ReceiptProductSplit = {
   error: string;
 };
 
+const RECEIPT_IMAGE_MAX_EDGE = 2400;
+const RECEIPT_IMAGE_COMPRESSION_THRESHOLD = 1_200_000;
+
+async function optimizeReceiptImage(file: File) {
+  const imageUrl = URL.createObjectURL(file);
+  try {
+    const image = await new Promise<HTMLImageElement>((resolve, reject) => {
+      const element = new Image();
+      element.onload = () => resolve(element);
+      element.onerror = () => reject(new Error('No se pudo preparar la imagen.'));
+      element.src = imageUrl;
+    });
+
+    const longestEdge = Math.max(image.naturalWidth, image.naturalHeight);
+    if (longestEdge <= RECEIPT_IMAGE_MAX_EDGE && file.size <= RECEIPT_IMAGE_COMPRESSION_THRESHOLD) return file;
+
+    const scale = Math.min(1, RECEIPT_IMAGE_MAX_EDGE / longestEdge);
+    const canvas = document.createElement('canvas');
+    canvas.width = Math.round(image.naturalWidth * scale);
+    canvas.height = Math.round(image.naturalHeight * scale);
+    const context = canvas.getContext('2d');
+    if (!context) return file;
+    context.drawImage(image, 0, 0, canvas.width, canvas.height);
+
+    const blob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, 'image/webp', 0.9));
+    if (!blob || blob.type !== 'image/webp' || blob.size >= file.size) return file;
+
+    const baseName = file.name.replace(/\.[^.]+$/, '') || 'ticket';
+    return new File([blob], `${baseName}.webp`, { type: 'image/webp', lastModified: file.lastModified });
+  } catch {
+    return file;
+  } finally {
+    URL.revokeObjectURL(imageUrl);
+  }
+}
+
 function calculateReceiptProductSplit(items: ReceiptItemDraft[], total: number): ReceiptProductSplit {
   if (!items.length) return { participants: [], shares: {}, error: 'No hay productos para dividir.' };
 
@@ -232,8 +268,10 @@ export function MovementComposer({ open, onOpenChange, members, currentMemberId,
     console.info('[receipt] solicitando análisis con IA al cargar la foto', { type: file.type, sizeBytes: file.size });
 
     try {
+      const optimizedFile = await optimizeReceiptImage(file);
+      setReceiptFile(optimizedFile);
       const formData = new FormData();
-      formData.append('receipt', file);
+      formData.append('receipt', optimizedFile);
       const response = await fetch('/api/receipts/analyze', { method: 'POST', body: formData });
       console.info('[receipt] respuesta de API de IA', { status: response.status, ok: response.ok });
       const data = await response.json() as {
