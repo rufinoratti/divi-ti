@@ -1,9 +1,10 @@
 'use client';
 
 import { useState } from 'react';
-import { ArrowDownLeftIcon, ArrowUpRightIcon, CheckCircle2Icon, Clock3Icon, WalletIcon, XIcon } from 'lucide-react';
+import { ArrowDownLeft, ArrowUpRight, CheckCircle, Clock, Wallet, X } from '@phosphor-icons/react';
 
 import { Avatar } from '@/components/layout/Avatar';
+import { Icon } from '@/components/ui/icon';
 import { PaymentConfirmationActions } from '@/components/features/PaymentActions';
 import {
   Dialog,
@@ -127,21 +128,21 @@ export function BalanceSection({ members, movements, obligations, payments, grou
       <div className="mt-6 grid grid-cols-1 gap-3 min-[400px]:grid-cols-2">
         <div className="rounded-2xl border border-line bg-white p-4">
           <p className="flex items-center gap-1.5 text-xs font-semibold text-copy-muted">
-            <ArrowUpRightIcon aria-hidden="true" size={15} className="text-danger" />
+            <Icon icon={ArrowUpRight} size="sm" className="text-danger" aria-hidden="true" />
             Debés
           </p>
           <p className="mt-2 min-w-0 break-words text-base font-bold tracking-[-0.04em] tabular-nums sm:text-xl">{formatARS(owing)}</p>
         </div>
         <div className="rounded-2xl border border-line bg-white p-4">
           <p className="flex items-center gap-1.5 text-xs font-semibold text-copy-muted">
-            <ArrowDownLeftIcon aria-hidden="true" size={15} className="text-success" />
+            <Icon icon={ArrowDownLeft} size="sm" className="text-success" aria-hidden="true" />
             Te deben
           </p>
           <p className="mt-2 min-w-0 break-words text-base font-bold tracking-[-0.04em] tabular-nums sm:text-xl">{formatARS(owed)}</p>
         </div>
       </div>
 
-      <section className="mt-6 rounded-[24px] border border-[#d7d4ff] bg-brand-wash p-5" aria-labelledby="net-balance-title">
+      <section className="mt-6 rounded-[var(--radius-panel)] border border-[#d7d4ff] bg-brand-wash p-5" aria-labelledby="net-balance-title">
         <h2 id="net-balance-title" className="divi-section-title">Saldo neto del grupo</h2>
         <p className="mt-1 text-xs leading-5 text-copy-muted">
           Propuesta orientativa; no cambia las deudas por gasto ni registra pagos.
@@ -185,10 +186,10 @@ export function BalanceSection({ members, movements, obligations, payments, grou
         )}
       </section>
 
-      <section className="mt-7 rounded-[24px] bg-surface p-5" aria-labelledby="obligations-title">
+      <section className="mt-7 rounded-[var(--radius-panel)] bg-surface p-5" aria-labelledby="obligations-title">
         <div className="flex items-center gap-3">
           <span className="grid size-11 place-items-center rounded-2xl bg-white text-brand ring-1 ring-line">
-            <ArrowUpRightIcon aria-hidden="true" size={20} />
+            <Icon icon={ArrowUpRight} size="md" aria-hidden="true" />
           </span>
           <div>
             <h2 id="obligations-title" className="divi-section-title">Deudas por gasto</h2>
@@ -199,7 +200,7 @@ export function BalanceSection({ members, movements, obligations, payments, grou
         <div className="mt-5 space-y-3">
           {currentObligations.length === 0 && (
             <div className="flex items-center gap-3 rounded-2xl bg-white p-4">
-              <CheckCircle2Icon aria-hidden="true" size={20} className="shrink-0 text-success" />
+              <Icon icon={CheckCircle} size="md" className="shrink-0 text-success" aria-hidden="true" />
               <p className="text-sm font-medium text-copy-muted">No tenés deudas pendientes en este grupo.</p>
             </div>
           )}
@@ -259,7 +260,7 @@ export function BalanceSection({ members, movements, obligations, payments, grou
 
                 {pendingPayment && isOwing && (
                   <p className="mt-3 inline-flex items-start gap-1.5 text-xs font-semibold leading-5 text-warning">
-                    <Clock3Icon aria-hidden="true" className="mt-0.5 shrink-0" size={14} />
+                    <Icon icon={Clock} size="sm" className="mt-0.5 shrink-0" aria-hidden="true" />
                     <span>
                       Avisaste {formatARS(pendingPayment.amount)} · falta que {creditor?.name ?? 'la otra persona'} confirme.
                       {' '}{`Si confirma, te quedarán ${formatARS(roundCurrency(Math.max(0, obligation.remainingAmount - pendingPayment.amount)))} por pagar.`}
@@ -288,7 +289,7 @@ export function BalanceSection({ members, movements, obligations, payments, grou
                     onClick={() => openPaymentDialog(obligation)}
                     className="mt-4 inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-full border border-brand px-4 text-sm font-bold text-brand transition hover:bg-brand-soft"
                   >
-                    <WalletIcon aria-hidden="true" size={16} />
+                    <Icon icon={Wallet} size="sm" aria-hidden="true" />
                     Pagar {obligation.description}
                   </button>
                 )}
@@ -312,12 +313,12 @@ export function BalanceSection({ members, movements, obligations, payments, grou
           if (!nextOpen) setError('');
         }}
       >
-        <DialogContent showCloseButton={false} className="max-h-[85dvh] max-w-[calc(100%-2rem)] overflow-y-auto rounded-[24px] bg-white p-6 sm:max-w-md">
+        <DialogContent showCloseButton={false} className="max-h-[85dvh] max-w-[calc(100%-2rem)] overflow-y-auto rounded-[var(--radius-panel)] bg-white p-6 sm:max-w-md">
           <DialogClose
             aria-label="Cerrar"
             className="absolute right-4 top-4 grid size-10 place-items-center rounded-full bg-surface text-ink"
           >
-            <XIcon aria-hidden="true" size={18} />
+            <Icon icon={X} size="md" aria-hidden="true" />
             <span className="sr-only">Cerrar</span>
           </DialogClose>
           <DialogHeader>
@@ -335,7 +336,7 @@ export function BalanceSection({ members, movements, obligations, payments, grou
                 onClick={() => { void reportPayment(selectedObligation.availableAmount); }}
                 className="inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-full bg-brand px-5 text-sm font-bold text-white transition hover:bg-brand-strong focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2 disabled:cursor-wait disabled:opacity-50"
               >
-                <WalletIcon aria-hidden="true" size={17} />
+                <Icon icon={Wallet} size="md" aria-hidden="true" />
                 {submitting ? 'Enviando aviso…' : `Pagar todo y avisar ${formatARS(selectedObligation.availableAmount)}`}
               </button>
             )}
@@ -375,7 +376,7 @@ export function BalanceSection({ members, movements, obligations, payments, grou
               onClick={() => { void reportPayment(parsedPaymentAmount); }}
               className="inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-full border border-brand bg-white px-5 text-sm font-bold text-brand transition hover:bg-brand-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
             >
-              <WalletIcon aria-hidden="true" size={17} />
+              <Icon icon={Wallet} size="md" aria-hidden="true" />
               {submitting ? 'Enviando aviso…' : 'Avisar este importe'}
             </button>
           </div>

@@ -1,8 +1,9 @@
 'use client';
 
-import { ChevronRightIcon, UsersRoundIcon } from 'lucide-react';
+import { CaretRight, UsersThree } from '@phosphor-icons/react';
 
 import { CreateGroupDialog } from '@/components/features/CreateGroupDialog';
+import { Icon } from '@/components/ui/icon';
 import { JoinGroupDialog } from '@/components/features/JoinGroupDialog';
 import { PendingPaymentsSection } from '@/components/features/PaymentActions';
 import { summarizeMemberObligations, type GroupLedger } from '@/lib/ledger';
@@ -46,7 +47,7 @@ export function AllGroupsHome({ groups, onOpenGroup, onPaymentChanged }: AllGrou
               className="flex min-h-[5.5rem] w-full items-center gap-3 px-4 py-4 text-left transition active:bg-surface"
             >
               <span className="grid size-11 shrink-0 place-items-center rounded-[16px] bg-brand-soft text-brand">
-                <UsersRoundIcon aria-hidden="true" size={20} strokeWidth={1.8} />
+                <Icon icon={UsersThree} size="md" aria-hidden="true" />
               </span>
               <span className="min-w-0 flex-1">
                 <span className="block truncate text-sm font-bold">{group.name}</span>
@@ -59,7 +60,7 @@ export function AllGroupsHome({ groups, onOpenGroup, onPaymentChanged }: AllGrou
                   </span>
                 ))}
               </span>
-              <ChevronRightIcon aria-hidden="true" size={18} className="shrink-0 text-subtle" />
+              <Icon icon={CaretRight} size="md" className="shrink-0 text-subtle" aria-hidden="true" />
             </button>
           );
         })}

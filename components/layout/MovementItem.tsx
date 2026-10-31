@@ -3,7 +3,8 @@
 import { type LedgerMovement, type Member } from '@/lib/ledger';
 import { MovementIcon } from '@/components/layout/MovementIcon';
 import { formatARS } from '@/lib/utils';
-import { ArrowDownLeftIcon, ArrowUpRightIcon, PencilIcon } from 'lucide-react';
+import { ArrowDownLeft, ArrowUpRight, PencilSimple } from '@phosphor-icons/react';
+import { Icon } from '@/components/ui/icon';
 
 interface MovementItemProps {
   movement: LedgerMovement;
@@ -28,7 +29,7 @@ export function MovementItem({ movement, members, currentMemberId, currentMember
   const detail = movement.kind === 'loan'
     ? `${payerName} le prestó a ${recipient?.name ?? 'integrante'}`
     : `Pagó ${payerName} - dividido entre ${movement.participants.length}`;
-  const DirectionIcon = isPositive ? ArrowDownLeftIcon : ArrowUpRightIcon;
+  const DirectionIcon = isPositive ? ArrowDownLeft : ArrowUpRight;
 
   return (
     <article className="movement-row flex items-center gap-3 px-4 py-3.5">
@@ -42,7 +43,7 @@ export function MovementItem({ movement, members, currentMemberId, currentMember
       <div className="shrink-0 text-right">
         <p className="text-sm font-bold tabular-nums text-ink">{formatARS(movement.amount)}</p>
         <span className={`mt-1 inline-flex items-center justify-end gap-0.5 text-[0.68rem] font-bold tabular-nums ${isPositive ? 'text-success' : 'text-danger'}`}>
-          <DirectionIcon aria-hidden="true" size={13} strokeWidth={2} />
+          <Icon icon={DirectionIcon} size="sm" aria-hidden="true" />
           {isPositive ? '+' : '−'}
         </span>
       </div>
@@ -55,7 +56,7 @@ export function MovementItem({ movement, members, currentMemberId, currentMember
           aria-label={isLocked ? `No se puede editar ${movement.description}: tiene pagos asociados` : `Editar ${movement.description}`}
           className="grid size-10 shrink-0 place-items-center rounded-full text-brand transition duration-150 hover:bg-brand-soft active:scale-[0.96] disabled:cursor-not-allowed disabled:text-subtle"
         >
-          <PencilIcon aria-hidden="true" size={17} strokeWidth={1.8} />
+          <Icon icon={PencilSimple} size="md" aria-hidden="true" />
         </button>
       )}
     </article>

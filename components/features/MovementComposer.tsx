@@ -1,9 +1,17 @@
 'use client';
 
 import { useEffect, useState, type ChangeEvent, type FormEvent } from 'react';
-import { CameraIcon, HandCoinsIcon, PlusIcon, ReceiptTextIcon, Trash2Icon, XIcon } from 'lucide-react';
+import {
+  Camera,
+  HandCoins,
+  Plus,
+  Receipt,
+  Trash,
+  X,
+} from '@phosphor-icons/react';
 import { Sheet, SheetContent, SheetDescription, SheetTitle } from '@/components/ui/sheet';
 import { Field } from '@/components/layout/Field';
+import { Icon, LoadingIcon } from '@/components/ui/icon';
 import { formatARS } from '@/lib/utils';
 import { interpretMovementText, parseCurrencyAmount } from '@/lib/movement-draft';
 import { splitAmountEquallyByMemberId, toCurrencyCents, type Member, type MovementKind, type MovementCategory, type DivisionMethod, type LedgerMovement } from '@/lib/ledger';
@@ -162,6 +170,7 @@ export function MovementComposer({ open, onOpenChange, members, currentMemberId,
   const [formError, setFormError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [receiptFile, setReceiptFile] = useState<File | null>(null);
+  const [receiptPreviewUrl, setReceiptPreviewUrl] = useState<string | null>(null);
   const [isAnalyzingReceipt, setIsAnalyzingReceipt] = useState(false);
   const [receiptAnalysisFailed, setReceiptAnalysisFailed] = useState(false);
   const [receiptItems, setReceiptItems] = useState<ReceiptItemDraft[]>([]);
@@ -205,10 +214,26 @@ export function MovementComposer({ open, onOpenChange, members, currentMemberId,
     setFormError('');
   }, [editingMovement, initialKind, open]);
 
+  function clearReceiptPreview() {
+    setReceiptPreviewUrl((current) => {
+      if (current) URL.revokeObjectURL(current);
+      return null;
+    });
+  }
+
+  function setReceiptPreview(file: File) {
+    clearReceiptPreview();
+    setReceiptPreviewUrl(URL.createObjectURL(file));
+  }
+
+  useEffect(() => () => {
+    if (receiptPreviewUrl) URL.revokeObjectURL(receiptPreviewUrl);
+  }, [receiptPreviewUrl]);
+
   function resetComposer() {
     setKind('expense'); setPhrase(''); setParseNotice(''); setDescription(''); setAmount(''); setPayer(currentMemberId); setRecipient('');
     setParticipants(members.map((member) => member.id)); setDivisionMethod('equal'); setParticipantShares({}); setIncomePreview(null);
-    setCategory('Comida'); setFormError(''); setReceiptFile(null);
+    setCategory('Comida'); setFormError(''); setReceiptFile(null); clearReceiptPreview();
     setIsAnalyzingReceipt(false); setReceiptAnalysisFailed(false); setReceiptItems([]); setReceiptSplitMode('total');
   }
   function closeComposer() { onOpenChange(false); resetComposer(); }
@@ -244,6 +269,7 @@ export function MovementComposer({ open, onOpenChange, members, currentMemberId,
     event.target.value = '';
     if (!file) return;
     setReceiptFile(null);
+    clearReceiptPreview();
     setReceiptItems([]);
     setReceiptSplitMode('total');
     setReceiptAnalysisFailed(false);
@@ -255,6 +281,7 @@ export function MovementComposer({ open, onOpenChange, members, currentMemberId,
     if (file.size > 12 * 1024 * 1024) { setFormError('La foto debe pesar menos de 12 MB.'); return; }
 
     setReceiptFile(file);
+    setReceiptPreview(file);
     void analyzeReceiptWithAI(file);
   }
 
@@ -264,12 +291,14 @@ export function MovementComposer({ open, onOpenChange, members, currentMemberId,
     setIsAnalyzingReceipt(true);
     setReceiptAnalysisFailed(false);
     setFormError('');
-    setParseNotice('Analizando el total y los productos del ticket con IA…');
+    setParseNotice('Preparando la foto del ticket…');
     console.info('[receipt] solicitando análisis con IA al cargar la foto', { type: file.type, sizeBytes: file.size });
 
     try {
       const optimizedFile = await optimizeReceiptImage(file);
       setReceiptFile(optimizedFile);
+      setReceiptPreview(optimizedFile);
+      setParseNotice('Leyendo el total y los productos…');
       const formData = new FormData();
       formData.append('receipt', optimizedFile);
       const response = await fetch('/api/receipts/analyze', { method: 'POST', body: formData });
@@ -292,7 +321,7 @@ export function MovementComposer({ open, onOpenChange, members, currentMemberId,
           message: data.error?.message ?? 'sin detalle',
         });
         setReceiptAnalysisFailed(true);
-        setParseNotice(data.error?.message ?? 'No pudimos analizar el ticket. Completá los datos manualmente.');
+        setParseNotice(data.error?.message ?? 'No pudimos leer el ticket. Completá los datos a mano.');
         return;
       }
 
@@ -312,15 +341,16 @@ export function MovementComposer({ open, onOpenChange, members, currentMemberId,
       setDescription(createReceiptDescription(items, receipt.totalAmount));
       setReceiptItems(items);
       setReceiptSplitMode('total');
+      const productLabel = items.length === 1 ? '1 producto' : `${items.length} productos`;
       setParseNotice(receipt.totalAmount === null
-        ? `La IA detectó ${items.length} productos, pero no pudo leer el total con claridad. Revisá los datos antes de guardar.`
+        ? `Detectamos ${productLabel}, pero el total no quedó claro. Revisá los datos antes de guardar.`
         : items.length
-          ? `La IA detectó un total de ${formatARS(receipt.totalAmount)} y ${items.length} productos. Revisá la descripción antes de guardar.`
-          : `La IA detectó un total de ${formatARS(receipt.totalAmount)}, pero no encontró productos legibles. Revisá la descripción antes de guardar.`);
+          ? `Detectamos un total de ${formatARS(receipt.totalAmount)} y ${productLabel}. Revisá la descripción antes de guardar.`
+          : `Detectamos un total de ${formatARS(receipt.totalAmount)}, pero no encontramos productos legibles. Revisá la descripción antes de guardar.`);
     } catch (error) {
       console.error('[receipt] llamada a la IA falló', { errorName: error instanceof Error ? error.name : 'unknown' });
       setReceiptAnalysisFailed(true);
-      setParseNotice('No pudimos comunicarnos con la IA. Revisá la conexión o completá los datos manualmente.');
+      setParseNotice('No pudimos leer el ticket. Revisá la conexión o completá los datos a mano.');
     } finally {
       setIsAnalyzingReceipt(false);
     }
@@ -430,15 +460,15 @@ export function MovementComposer({ open, onOpenChange, members, currentMemberId,
                 <SheetTitle className="divi-section-title text-xl font-bold">{editingMovement ? 'Editar movimiento' : 'Nuevo movimiento'}</SheetTitle>
                 <SheetDescription className="mt-1.5 leading-5 text-copy-muted">{editingMovement ? 'El balance se actualiza al guardar.' : 'Completá los datos y revisá el reparto antes de guardar.'}</SheetDescription>
               </div>
-              <button type="button" onClick={closeComposer} disabled={isSubmitting} aria-label="Cerrar" className="grid size-10 shrink-0 place-items-center rounded-full bg-surface text-ink transition active:scale-[0.96] disabled:opacity-50"><XIcon aria-hidden="true" size={18} /></button>
+              <button type="button" onClick={closeComposer} disabled={isSubmitting} aria-label="Cerrar" className="grid size-10 shrink-0 place-items-center rounded-full bg-surface text-ink transition active:scale-[0.96] disabled:opacity-50"><Icon icon={X} size="md" aria-hidden="true" /></button>
             </div>
-          <div className="mt-4 grid grid-cols-2 gap-1.5 rounded-2xl bg-surface p-1">
+          <div className="mt-4 grid grid-cols-2 gap-1.5 rounded-[var(--radius-control)] bg-surface p-1">
             {[
-              { id: 'expense' as const, label: 'Gasto grupal', icon: ReceiptTextIcon },
-              { id: 'loan' as const, label: 'Préstamo', icon: HandCoinsIcon },
+              { id: 'expense' as const, label: 'Gasto grupal', icon: Receipt },
+              { id: 'loan' as const, label: 'Préstamo', icon: HandCoins },
             ].map((option) => (
-              <button key={option.id} type="button" aria-pressed={kind === option.id} onClick={() => { setKind(option.id); setFormError(''); }} className={`flex min-h-11 items-center justify-center gap-2 rounded-xl px-3 text-sm font-bold transition active:scale-[0.98] ${kind === option.id ? 'bg-white text-brand shadow-[0_1px_4px_rgba(31,31,31,0.08)]' : 'text-copy-muted'}`}>
-                <option.icon aria-hidden="true" size={17} strokeWidth={1.8} />
+              <button key={option.id} type="button" aria-pressed={kind === option.id} onClick={() => { setKind(option.id); setFormError(''); }} className={`flex min-h-11 items-center justify-center gap-2 rounded-[var(--radius-control)] px-3 text-sm font-bold transition active:scale-[0.98] ${kind === option.id ? 'bg-white text-brand shadow-[0_1px_4px_rgba(31,31,31,0.08)]' : 'text-copy-muted'}`}>
+                <Icon icon={option.icon} size="sm" weight={kind === option.id ? 'fill' : 'regular'} aria-hidden="true" />
                 {option.label}
               </button>
             ))}
@@ -446,43 +476,85 @@ export function MovementComposer({ open, onOpenChange, members, currentMemberId,
           </div>
           <div className="min-h-0 flex-1 space-y-4 overflow-y-auto overscroll-contain px-5 py-4 sm:px-6">
             <Field label="Contalo en una frase" htmlFor="movement-phrase">
-              <textarea id="movement-phrase" value={phrase} onChange={(event) => setPhrase(event.target.value)} rows={2} placeholder="Ej. Le presté $3.000 a Juan" className="w-full rounded-2xl border border-line bg-white px-4 py-3 text-sm outline-none placeholder:text-copy-muted focus:border-brand" />
+              <textarea id="movement-phrase" value={phrase} onChange={(event) => setPhrase(event.target.value)} rows={2} placeholder="Ej. Le presté $3.000 a Juan" className="w-full rounded-[var(--radius-control)] border border-line bg-white px-4 py-3 text-sm outline-none placeholder:text-copy-muted focus:border-brand" />
               <button type="button" onClick={handleInterpretPhrase} disabled={!phrase.trim()} className="mt-2 min-h-10 rounded-full border border-line px-4 text-xs font-bold text-brand disabled:opacity-50">Completar desde la frase</button>
             </Field>
             <Field label="Foto del ticket (opcional)" htmlFor="receipt-photo">
               <div className="relative">
                 <input id="receipt-photo" type="file" accept="image/jpeg,image/png,image/webp" capture="environment" onChange={handleReceiptFile} disabled={isAnalyzingReceipt} aria-describedby="receipt-photo-help" className="peer sr-only" />
-                <label htmlFor="receipt-photo" className="flex min-h-14 cursor-pointer items-center gap-3 rounded-2xl border border-line bg-white px-3 transition peer-focus-visible:outline peer-focus-visible:outline-2 peer-focus-visible:outline-brand peer-focus-visible:outline-offset-2">
-                  <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-brand-soft text-brand">
-                    {isAnalyzingReceipt ? <span className="size-4 animate-spin rounded-full border-2 border-brand/25 border-t-brand" aria-hidden="true" /> : <CameraIcon aria-hidden="true" size={19} strokeWidth={1.8} />}
-                  </span>
-                  <span className="min-w-0 flex-1">
-                    <span className="block text-sm font-semibold text-ink">{isAnalyzingReceipt ? 'Leyendo el ticket…' : receiptFile ? 'Cambiar foto del ticket' : 'Tomar foto o elegir una imagen'}</span>
-                    {receiptFile && <span className="mt-0.5 block truncate text-xs text-copy-muted">{receiptFile.name}</span>}
-                  </span>
-                </label>
+                {!receiptPreviewUrl ? (
+                  <label htmlFor="receipt-photo" className="flex min-h-14 cursor-pointer items-center gap-3 rounded-[var(--radius-control)] border border-line bg-white px-3 transition peer-focus-visible:outline peer-focus-visible:outline-2 peer-focus-visible:outline-brand peer-focus-visible:outline-offset-2">
+                    <span className="divi-icon-well">
+                      <Icon icon={Camera} size="md" aria-hidden="true" />
+                    </span>
+                    <span className="min-w-0 flex-1">
+                      <span className="block text-sm font-semibold text-ink">Tomar foto o elegir una imagen</span>
+                      <span className="mt-0.5 block text-xs text-copy-muted">JPG, PNG o WebP</span>
+                    </span>
+                  </label>
+                ) : (
+                  <div className="space-y-3">
+                    <div className={`receipt-scan aspect-[4/3] ${isAnalyzingReceipt ? '' : ''}`}>
+                      <img src={receiptPreviewUrl} alt="Vista previa del ticket" />
+                      {isAnalyzingReceipt && (
+                        <>
+                          <div className="receipt-scan-overlay" aria-hidden="true" />
+                          <div className="receipt-scan-beam" aria-hidden="true" />
+                          <div className="receipt-scan-status">
+                            <LoadingIcon size="sm" className="text-brand" label="Leyendo ticket" />
+                            <span>Leyendo el total y los productos</span>
+                          </div>
+                        </>
+                      )}
+                      {receiptAnalysisFailed && !isAnalyzingReceipt && (
+                        <div className="receipt-scan-status">
+                          <span>No se pudo leer el ticket</span>
+                        </div>
+                      )}
+                    </div>
+                    <div className="flex gap-2">
+                      <label htmlFor="receipt-photo" className="flex min-h-11 flex-1 cursor-pointer items-center justify-center rounded-full border border-line px-4 text-sm font-bold text-ink transition active:scale-[0.98] peer-focus-visible:outline peer-focus-visible:outline-2 peer-focus-visible:outline-brand peer-focus-visible:outline-offset-2">
+                        Cambiar foto
+                      </label>
+                      {receiptAnalysisFailed && (
+                        <button type="button" onClick={() => { void analyzeReceiptWithAI(receiptFile!); }} disabled={isAnalyzingReceipt || !receiptFile} className="flex min-h-11 flex-1 items-center justify-center gap-2 rounded-full border border-brand px-4 text-sm font-bold text-brand disabled:opacity-50">
+                          {isAnalyzingReceipt ? <LoadingIcon size="sm" className="text-brand" /> : null}
+                          {isAnalyzingReceipt ? 'Leyendo…' : 'Reintentar'}
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                )}
               </div>
-              <p id="receipt-photo-help" className="mt-2 text-xs leading-5 text-copy-muted">La imagen se envía a OpenRouter para detectar el total y los productos con sus precios.</p>
-              {isAnalyzingReceipt && <p role="status" className="sr-only">Analizando el total y los productos del ticket.</p>}
-              {receiptFile && receiptAnalysisFailed && (
-                <button type="button" onClick={() => { void analyzeReceiptWithAI(receiptFile); }} disabled={isAnalyzingReceipt} className="mt-3 min-h-11 w-full rounded-full border border-brand px-4 text-sm font-bold text-brand disabled:opacity-50">
-                  {isAnalyzingReceipt ? 'Analizando ticket…' : 'Reintentar análisis con IA'}
-                </button>
+              <p id="receipt-photo-help" className="mt-2 text-xs leading-5 text-copy-muted">Leemos el total y los productos de la foto.</p>
+              {isAnalyzingReceipt && <p role="status" className="sr-only">Leyendo el total y los productos del ticket.</p>}
+            </Field>
+            {parseNotice && !isAnalyzingReceipt && <p role="status" className={`rounded-[var(--radius-control)] px-4 py-3 text-xs leading-5 ${receiptAnalysisFailed ? 'bg-[#fff8f7] text-danger' : 'bg-brand-wash text-[#5149ba]'}`}>{parseNotice}</p>}
+            <Field label="Descripción" htmlFor="description">
+              {isAnalyzingReceipt ? (
+                <div className="space-y-2" aria-hidden="true">
+                  <div className="divi-skeleton h-12 rounded-[var(--radius-control)]" />
+                  <div className="divi-skeleton h-8 w-4/5 rounded-[var(--radius-control)]" />
+                </div>
+              ) : (
+                <textarea
+                  id="description"
+                  value={description}
+                  rows={Math.min(Math.max(description.split('\n').length, 2), 8)}
+                  maxLength={1000}
+                  onChange={(event) => setDescription(event.target.value)}
+                  placeholder={kind === 'expense' ? 'Ej. compra del súper' : 'Ej. préstamo a Juan'}
+                  className="w-full resize-y rounded-[var(--radius-control)] border border-line bg-white px-4 py-3 text-sm leading-6 outline-none placeholder:text-copy-muted focus:border-brand"
+                />
               )}
             </Field>
-            {parseNotice && <p role="status" className="rounded-2xl bg-brand-wash px-4 py-3 text-xs leading-5 text-[#5149ba]">{parseNotice}</p>}
-            <Field label="Descripción" htmlFor="description">
-              <textarea
-                id="description"
-                value={description}
-                rows={Math.min(Math.max(description.split('\n').length, 2), 8)}
-                maxLength={1000}
-                onChange={(event) => setDescription(event.target.value)}
-                placeholder={kind === 'expense' ? 'Ej. compra del súper' : 'Ej. préstamo a Juan'}
-                className="w-full resize-y rounded-2xl border border-line bg-white px-4 py-3 text-sm leading-6 outline-none placeholder:text-copy-muted focus:border-brand"
-              />
+            <Field label="Importe" htmlFor="amount">
+              {isAnalyzingReceipt ? (
+                <div className="divi-skeleton h-12 rounded-[var(--radius-control)]" aria-hidden="true" />
+              ) : (
+                <div className="flex h-12 items-center rounded-[var(--radius-control)] border border-line bg-white focus-within:border-brand"><span className="pl-4 text-sm font-bold text-copy-muted">$</span><input id="amount" inputMode="decimal" value={amount} onChange={(e) => { setAmount(e.target.value); setIncomePreview(null); }} placeholder="0" className="h-full min-w-0 flex-1 rounded-[var(--radius-control)] px-2 text-sm font-bold outline-none placeholder:text-copy-muted" /><span className="pr-4 text-xs font-medium text-copy-muted">ARS</span></div>
+              )}
             </Field>
-            <Field label="Importe" htmlFor="amount"><div className="flex h-12 items-center rounded-2xl border border-line bg-white focus-within:border-brand"><span className="pl-4 text-sm font-bold text-copy-muted">$</span><input id="amount" inputMode="decimal" value={amount} onChange={(e) => { setAmount(e.target.value); setIncomePreview(null); }} placeholder="0" className="h-full min-w-0 flex-1 rounded-2xl px-2 text-sm font-bold outline-none placeholder:text-copy-muted" /><span className="pr-4 text-xs font-medium text-copy-muted">ARS</span></div></Field>
             {kind === 'expense' && receiptItems.length > 0 && (
               <section aria-labelledby="receipt-split-title" className="space-y-3 rounded-2xl border border-line p-4">
                 <div>
@@ -546,8 +618,9 @@ export function MovementComposer({ open, onOpenChange, members, currentMemberId,
                     </fieldset>
                     {divisionMethod === 'income' && (
                       <div>
-                        <button type="button" onClick={() => { void previewIncomeSplit(); }} disabled={isPreviewingIncome || isAnalyzingReceipt} className="min-h-11 w-full rounded-full border border-brand px-4 text-sm font-bold text-brand disabled:opacity-50">
-                          {isPreviewingIncome ? 'Calculando reparto...' : 'Calcular reparto por ingresos'}
+                        <button type="button" onClick={() => { void previewIncomeSplit(); }} disabled={isPreviewingIncome || isAnalyzingReceipt} className="flex min-h-11 w-full items-center justify-center gap-2 rounded-full border border-brand px-4 text-sm font-bold text-brand disabled:opacity-50">
+                          {isPreviewingIncome && <LoadingIcon size="sm" className="text-brand" />}
+                          {isPreviewingIncome ? 'Calculando reparto…' : 'Calcular reparto por ingresos'}
                         </button>
                         {incomePreview && (
                           <ul className="mt-3 space-y-2 rounded-2xl bg-surface p-4 text-sm">
@@ -570,7 +643,7 @@ export function MovementComposer({ open, onOpenChange, members, currentMemberId,
                       <div key={item.id} className="space-y-3 rounded-xl bg-white p-3">
                         <div className="flex items-center gap-2">
                           <input aria-label={`Producto ${index + 1}`} value={item.name} onChange={(event) => { setReceiptItems((current) => current.map((line) => line.id === item.id ? { ...line, name: event.target.value } : line)); setFormError(''); }} maxLength={120} placeholder="Nombre del producto" className="h-10 min-w-0 flex-1 rounded-xl border border-line px-3 text-sm outline-none focus:border-brand" />
-                          <button type="button" onClick={() => { setReceiptItems((current) => current.filter((line) => line.id !== item.id)); if (receiptItems.length === 1) setReceiptSplitMode('total'); setFormError(''); }} aria-label={`Quitar ${item.name || `producto ${index + 1}`}`} className="grid size-10 shrink-0 place-items-center rounded-full text-subtle hover:bg-surface"><Trash2Icon aria-hidden="true" size={16} /></button>
+                          <button type="button" onClick={() => { setReceiptItems((current) => current.filter((line) => line.id !== item.id)); if (receiptItems.length === 1) setReceiptSplitMode('total'); setFormError(''); }} aria-label={`Quitar ${item.name || `producto ${index + 1}`}`} className="grid size-10 shrink-0 place-items-center rounded-full text-subtle hover:bg-surface"><Icon icon={Trash} size="sm" aria-hidden="true" /></button>
                         </div>
                         <label className="flex h-10 items-center rounded-xl border border-line focus-within:border-brand">
                           <span className="pl-3 text-xs text-copy-muted">$</span>
@@ -588,7 +661,7 @@ export function MovementComposer({ open, onOpenChange, members, currentMemberId,
                         </div>
                       </div>
                     ))}
-                    <button type="button" onClick={() => { setReceiptItems((current) => [...current, { id: `manual-${Date.now()}-${current.length}`, name: '', quantity: null, amount: '', participants: [...participants] }]); setFormError(''); }} className="inline-flex min-h-10 items-center gap-2 rounded-full px-3 text-xs font-bold text-brand"><PlusIcon aria-hidden="true" size={15} />Agregar producto</button>
+                    <button type="button" onClick={() => { setReceiptItems((current) => [...current, { id: `manual-${Date.now()}-${current.length}`, name: '', quantity: null, amount: '', participants: [...participants] }]); setFormError(''); }} className="inline-flex min-h-10 items-center gap-2 rounded-full px-3 text-xs font-bold text-brand"><Icon icon={Plus} size="sm" aria-hidden="true" />Agregar producto</button>
                     <div className="rounded-xl bg-white px-3 py-2 text-xs leading-5 text-copy-muted">
                       <p>Productos: {formatARS(receiptItemsTotalCents / 100)} · Total del ticket: {receiptTotalAmount === null ? 'Ingresalo arriba' : formatARS(receiptTotalAmount)}</p>
                       {receiptDifferenceCents !== null && receiptDifferenceCents !== 0 && <p className="mt-1">La diferencia de {formatARS(Math.abs(receiptDifferenceCents) / 100)} se ajusta proporcionalmente entre quienes tienen productos asignados.</p>}
@@ -608,7 +681,7 @@ export function MovementComposer({ open, onOpenChange, members, currentMemberId,
           <div className="shrink-0 border-t border-line bg-white/95 px-5 pb-3 pt-3 backdrop-blur-sm sm:px-6">
             {formError && <p role="alert" className="mb-3 rounded-xl bg-[#fff8f7] px-3 py-2 text-sm font-medium text-danger">{formError}</p>}
             <button type="submit" disabled={isSubmitting || isAnalyzingReceipt || isPreviewingIncome} className="flex min-h-14 w-full items-center justify-center gap-2 rounded-full bg-brand px-5 text-sm font-bold text-white transition duration-150 active:scale-[0.985] disabled:cursor-wait disabled:opacity-60">
-              <PlusIcon aria-hidden="true" size={18} strokeWidth={2} />
+              {isSubmitting ? <LoadingIcon size="sm" className="text-white" /> : <Icon icon={Plus} size="md" weight="bold" aria-hidden="true" />}
               {isSubmitting ? 'Guardando…' : editingMovement ? 'Guardar cambios' : 'Guardar movimiento'}
             </button>
           </div>

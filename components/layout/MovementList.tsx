@@ -2,7 +2,8 @@
 
 import { type LedgerMovement, type Member } from '@/lib/ledger';
 import { MovementItem } from '@/components/layout/MovementItem';
-import { ReceiptTextIcon } from 'lucide-react';
+import { Receipt } from '@phosphor-icons/react';
+import { Icon } from '@/components/ui/icon';
 
 interface MovementListProps {
   movements: LedgerMovement[];
@@ -26,8 +27,8 @@ export function MovementList({
   if (!movements.length) {
     return (
       <div className="divi-surface-muted flex flex-col items-center px-5 py-8 text-center">
-        <span className="grid size-12 place-items-center rounded-2xl border border-line bg-white text-brand">
-          <ReceiptTextIcon aria-hidden="true" size={21} strokeWidth={1.8} />
+        <span className="divi-icon-well size-12 border border-line bg-white">
+          <Icon icon={Receipt} size="md" aria-hidden="true" />
         </span>
         <p className="mt-4 text-sm font-bold text-ink">{emptyLabel}</p>
         <p className="mt-1 max-w-[18rem] text-sm leading-5 text-copy-muted">Agregá un gasto o préstamo para ver el balance.</p>

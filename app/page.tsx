@@ -20,16 +20,18 @@ import { type LedgerMovement, type MovementKind } from '@/lib/ledger';
 import { GroupOnboarding } from '@/components/features/GroupOnboarding';
 import { GuestOnboarding } from '@/components/features/GuestOnboarding';
 import { EmptyGroupsHome } from '@/components/features/EmptyGroupsHome';
-import { CircleAlertIcon, RefreshCwIcon } from 'lucide-react';
+import { ArrowClockwise, WarningCircle } from '@phosphor-icons/react';
+
+import { Icon } from '@/components/ui/icon';
 
 type ActivityFilter = 'all' | LedgerMovement['kind'];
 
 function DataError({ message }: { message: string }) {
   return (
     <main className="divi-page grid place-items-center px-6 pb-[max(1.5rem,env(safe-area-inset-bottom))] pt-[max(1.5rem,env(safe-area-inset-top))]">
-      <section className="w-full max-w-sm rounded-[24px] border border-line bg-white p-6 text-center" role="alert">
+      <section className="w-full max-w-sm rounded-[var(--radius-panel)] border border-line bg-white p-6 text-center" role="alert">
         <span className="mx-auto grid size-12 place-items-center rounded-2xl bg-[#fff8f7] text-danger">
-          <CircleAlertIcon aria-hidden="true" size={22} strokeWidth={1.8} />
+          <Icon icon={WarningCircle} size="lg" aria-hidden="true" />
         </span>
         <h1 className="mt-4 text-2xl font-bold tracking-[-0.04em]">No pudimos abrir tu grupo</h1>
         <p className="mt-2 text-sm leading-6 text-copy-muted">{message}</p>
@@ -38,7 +40,7 @@ function DataError({ message }: { message: string }) {
           onClick={() => window.location.reload()}
           className="mt-5 inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-full bg-brand px-6 text-sm font-bold text-white transition active:scale-[0.98]"
         >
-          <RefreshCwIcon aria-hidden="true" size={16} />
+          <Icon icon={ArrowClockwise} size="sm" aria-hidden="true" />
           Volver a intentar
         </button>
       </section>

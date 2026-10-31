@@ -1,5 +1,7 @@
 import type { ReactNode } from 'react';
-import { CircleAlertIcon, CircleCheckIcon, type LucideIcon } from 'lucide-react';
+import { CheckCircle, WarningCircle } from '@phosphor-icons/react';
+
+import { Icon, type PhosphorIcon } from '@/components/ui/icon';
 
 interface AuthPageFrameProps {
   title: string;
@@ -61,19 +63,19 @@ export function AuthPageFrame({ title, description, children, footer, note }: Au
 interface AuthFieldProps {
   id: string;
   label: string;
-  icon: LucideIcon;
+  icon: PhosphorIcon;
   error?: string;
   children: ReactNode;
 }
 
-export function AuthField({ id, label, icon: Icon, error, children }: AuthFieldProps) {
+export function AuthField({ id, label, icon: FieldIcon, error, children }: AuthFieldProps) {
   const errorId = `${id}-error`;
 
   return (
     <div className="auth-field-group">
       <label htmlFor={id} className="auth-label">{label}</label>
       <div className={`auth-field ${error ? 'auth-field-error' : ''}`}>
-        <Icon aria-hidden="true" className="auth-field-icon" />
+        <Icon icon={FieldIcon} aria-hidden="true" className="auth-field-icon" />
         {children}
       </div>
       {error && <p id={errorId} role="alert" className="auth-field-message">{error}</p>}
@@ -89,8 +91,6 @@ interface AuthFeedbackProps {
 export function AuthFeedback({ message, variant }: AuthFeedbackProps) {
   if (!message) return null;
 
-  const FeedbackIcon = variant === 'error' ? CircleAlertIcon : CircleCheckIcon;
-
   return (
     <div
       className={`auth-toast auth-toast-${variant}`}
@@ -98,7 +98,7 @@ export function AuthFeedback({ message, variant }: AuthFeedbackProps) {
       aria-live={variant === 'error' ? 'assertive' : 'polite'}
       aria-atomic="true"
     >
-      <FeedbackIcon aria-hidden="true" className="auth-toast-mark" />
+      <Icon icon={variant === 'error' ? WarningCircle : CheckCircle} aria-hidden="true" className="auth-toast-mark" />
       <p>{message}</p>
     </div>
   );

@@ -1,18 +1,20 @@
-import { CircleCheckIcon, ReceiptTextIcon, UsersIcon } from 'lucide-react';
+import { CheckCircle, Receipt, Users } from '@phosphor-icons/react';
 
-const onboardingSteps = [
+import { Icon, type PhosphorIcon } from '@/components/ui/icon';
+
+const onboardingSteps: Array<{ icon: PhosphorIcon; title: string; description: string }> = [
   {
-    icon: ReceiptTextIcon,
+    icon: Receipt,
     title: 'Registrá cada gasto',
     description: 'Anotá lo que paga cada persona del grupo.',
   },
   {
-    icon: UsersIcon,
+    icon: Users,
     title: 'Dividí sin vueltas',
     description: 'Repartí la cuenta entre quienes participaron.',
   },
   {
-    icon: CircleCheckIcon,
+    icon: CheckCircle,
     title: 'Mirá el balance',
     description: 'Sabé qué queda por saldar en un solo lugar.',
   },
@@ -37,10 +39,10 @@ export function GuestOnboarding() {
           </p>
 
           <ul className="guest-onboarding-steps" aria-label="Cómo funciona Divi">
-            {onboardingSteps.map(({ icon: Icon, title, description }) => (
+            {onboardingSteps.map(({ icon: StepIcon, title, description }) => (
               <li key={title} className="guest-onboarding-step">
                 <span className="guest-onboarding-step-icon" aria-hidden="true">
-                  <Icon />
+                  <Icon icon={StepIcon} size="sm" aria-hidden="true" />
                 </span>
                 <span>
                   <strong>{title}</strong>

@@ -2,8 +2,10 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { LogOutIcon, UsersIcon } from 'lucide-react';
+import { SignOut, Users } from '@phosphor-icons/react';
+
 import { Avatar } from '@/components/layout/Avatar';
+import { Icon } from '@/components/ui/icon';
 import { ProfileRow } from '@/components/layout/ProfileRow';
 import { type Member } from '@/lib/ledger';
 import { InviteMemberForm } from '@/components/features/InviteMemberForm';
@@ -52,7 +54,7 @@ export function ProfileSection({ currentMemberId, members, profileMember, accoun
   return (
     <section className="mt-8" aria-labelledby="profile-title">
       <h1 id="profile-title" className="divi-page-title">Perfil</h1>
-      <section className="mt-7 rounded-[24px] bg-surface p-6">
+      <section className="mt-7 rounded-[var(--radius-panel)] bg-surface p-6">
         <div className="flex items-center gap-4">
           <Avatar member={currentMember} />
           <div>
@@ -72,8 +74,8 @@ export function ProfileSection({ currentMemberId, members, profileMember, accoun
       {canInvite && groupId && <InviteMemberForm groupId={groupId} />}
       <MonthlyIncomeSettings />
 
-      <section className="mt-7 rounded-[24px] border border-line p-6">
-        <UsersIcon aria-hidden="true" size={23} className="text-brand" strokeWidth={1.8} />
+      <section className="mt-7 rounded-[var(--radius-panel)] border border-line p-6">
+        <Icon icon={Users} size="lg" className="text-brand" aria-hidden="true" />
         <h2 className="mt-4 divi-section-title">Tu espacio compartido</h2>
         <p className="mt-2 text-sm leading-6 text-copy-muted">
           Tus grupos, integrantes y movimientos quedan vinculados a tu cuenta para que puedas retomarlos cuando quieras.
@@ -87,13 +89,13 @@ export function ProfileSection({ currentMemberId, members, profileMember, accoun
           onClick={() => setLogoutConfirmationOpen(true)}
           className="flex min-h-12 w-full items-center justify-center gap-2 rounded-full border border-[#f0c8c4] px-5 text-sm font-bold text-danger transition hover:bg-[#fef4f4] active:scale-[0.98]"
         >
-          <LogOutIcon aria-hidden="true" size={17} strokeWidth={1.8} />
+          <Icon icon={SignOut} size="md" aria-hidden="true" />
           Cerrar sesión
         </button>
       </section>
 
       <AlertDialog open={logoutConfirmationOpen} onOpenChange={setLogoutConfirmationOpen}>
-        <AlertDialogContent className="max-w-[calc(100%-2rem)] rounded-[24px] border border-line bg-white p-6 sm:max-w-sm">
+        <AlertDialogContent className="max-w-[calc(100%-2rem)] rounded-[var(--radius-panel)] border border-line bg-white p-6 sm:max-w-sm">
           <AlertDialogHeader className="text-left">
             <AlertDialogTitle className="divi-section-title text-lg font-bold">
               ¿Querés cerrar sesión?

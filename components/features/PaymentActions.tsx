@@ -1,8 +1,9 @@
 'use client';
 
 import { useState } from 'react';
-import { CheckIcon, XIcon } from 'lucide-react';
+import { Check, X } from '@phosphor-icons/react';
 
+import { Icon } from '@/components/ui/icon';
 import { roundCurrency, type GroupLedger, type MovementObligation, type SettlementPayment } from '@/lib/ledger';
 import { formatARS } from '@/lib/utils';
 
@@ -70,7 +71,7 @@ export function PaymentConfirmationActions({
           onClick={() => { void respond('reject'); }}
           className="inline-flex min-h-10 items-center justify-center gap-1 rounded-full border border-line bg-white px-2 text-xs font-bold text-copy-muted transition hover:bg-surface focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2 disabled:cursor-wait disabled:opacity-50"
         >
-          <XIcon aria-hidden="true" size={14} />
+          <Icon icon={X} size="sm" aria-hidden="true" />
           No lo recibí
         </button>
         <button
@@ -79,7 +80,7 @@ export function PaymentConfirmationActions({
           onClick={() => { void respond('confirm'); }}
           className="inline-flex min-h-10 items-center justify-center gap-1 rounded-full bg-brand px-2 text-xs font-bold text-white transition hover:bg-brand-strong focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2 disabled:cursor-wait disabled:opacity-50"
         >
-          <CheckIcon aria-hidden="true" size={14} />
+          <Icon icon={Check} size="sm" aria-hidden="true" />
           {busy ? 'Guardando…' : 'Sí, lo recibí'}
         </button>
       </div>
@@ -125,7 +126,7 @@ export function PendingPaymentsSection({ groups, onPaymentChanged, className = '
       </div>
 
       {pendingItems.map(({ group, payment, movement, obligation, debtorName }) => (
-        <article key={payment.id} className="rounded-[24px] border border-[#ead7a8] bg-[#fffaf0] p-4">
+        <article key={payment.id} className="rounded-[var(--radius-panel)] border border-[#ead7a8] bg-[#fffaf0] p-4">
           <div className="flex items-start justify-between gap-3">
             <div className="min-w-0">
               <h3 className="whitespace-pre-line text-base font-bold">{movement.description}</h3>

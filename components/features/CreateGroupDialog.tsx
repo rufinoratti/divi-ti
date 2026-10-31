@@ -1,9 +1,10 @@
 'use client';
 
 import { useId, useState, type FormEvent } from 'react';
-import { PlusIcon, XIcon } from 'lucide-react';
+import { Plus, X } from '@phosphor-icons/react';
 
 import { Field } from '@/components/layout/Field';
+import { Icon } from '@/components/ui/icon';
 import { Dialog, DialogClose, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { OPEN_GROUP_ONCE_STORAGE_KEY } from '@/lib/group-state';
 
@@ -72,28 +73,28 @@ export function CreateGroupDialog({ compact = false, compactLabel = 'Crear otro 
             ? 'inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-full bg-brand px-3 text-sm font-bold text-white transition hover:bg-[#4a40df] active:scale-[0.98]'
             : 'inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-2xl border border-brand px-5 text-sm font-bold text-brand transition active:scale-[0.98]'}
         >
-          <PlusIcon aria-hidden="true" size={17} />
+          <Icon icon={Plus} size="md" aria-hidden="true" />
           {compactLabel}
         </DialogTrigger>
       ) : (
-        <section className="mt-7 rounded-[24px] border border-line p-6" aria-labelledby={titleId}>
+        <section className="mt-7 rounded-[var(--radius-panel)] border border-line p-6" aria-labelledby={titleId}>
           <h2 id={titleId} className="divi-section-title">Otro grupo, otro balance</h2>
           <p className="mt-2 text-sm leading-6 text-copy-muted">Separá los gastos de tus amistades, tu casa o un viaje.</p>
           <DialogTrigger
             className="mt-5 inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-full border border-brand px-5 text-sm font-bold text-brand transition active:scale-[0.98]"
           >
-            <PlusIcon aria-hidden="true" size={17} />
+            <Icon icon={Plus} size="md" aria-hidden="true" />
             Crear otro grupo
           </DialogTrigger>
         </section>
       )}
 
-      <DialogContent showCloseButton={false} className="max-w-[calc(100%-2rem)] rounded-[24px] bg-white p-6 sm:max-w-md">
+      <DialogContent showCloseButton={false} className="max-w-[calc(100%-2rem)] rounded-[var(--radius-panel)] bg-white p-6 sm:max-w-md">
         <DialogClose
           aria-label="Cerrar"
           className="absolute right-4 top-4 grid size-10 place-items-center rounded-full bg-surface text-ink"
         >
-          <XIcon aria-hidden="true" size={18} />
+          <Icon icon={X} size="md" aria-hidden="true" />
           <span className="sr-only">Cerrar</span>
         </DialogClose>
         <form onSubmit={handleSubmit}>

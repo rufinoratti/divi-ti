@@ -1,7 +1,9 @@
 'use client';
 
-import { CopyIcon, LinkIcon, MailIcon } from 'lucide-react';
+import { Copy, Envelope, LinkSimple } from '@phosphor-icons/react';
 import { useState, type FormEvent } from 'react';
+
+import { Icon } from '@/components/ui/icon';
 
 interface InviteMemberFormProps {
   groupId: string;
@@ -61,15 +63,15 @@ export function InviteMemberForm({ groupId }: InviteMemberFormProps) {
   }
 
   return (
-    <section className="mt-7 rounded-[24px] border border-line p-6" aria-labelledby="invite-title">
-      <LinkIcon aria-hidden="true" size={23} className="text-brand" strokeWidth={1.8} />
+    <section className="mt-7 rounded-[var(--radius-panel)] border border-line p-6" aria-labelledby="invite-title">
+      <Icon icon={LinkSimple} size="lg" className="text-brand" aria-hidden="true" />
       <h2 id="invite-title" className="mt-4 divi-section-title">Sumá a alguien al grupo</h2>
       <p className="mt-2 text-sm leading-6 text-copy-muted">Generá un enlace y compartilo con la persona que querés invitar.</p>
 
       <form onSubmit={handleSubmit} className="mt-5 space-y-3">
         <label className="block text-sm font-medium text-copy-muted" htmlFor="invite-email">Email de la persona</label>
         <div className="flex items-center rounded-2xl border border-line px-3 focus-within:border-brand">
-          <MailIcon aria-hidden="true" size={17} className="text-subtle" />
+          <Icon icon={Envelope} size="md" className="text-subtle" aria-hidden="true" />
           <input
             id="invite-email"
             name="email"
@@ -106,7 +108,7 @@ export function InviteMemberForm({ groupId }: InviteMemberFormProps) {
           <div className="flex items-center gap-2 rounded-2xl bg-surface p-2">
             <input id="invite-url" readOnly value={inviteUrl} className="min-w-0 flex-1 bg-transparent px-2 text-xs text-copy-muted outline-none" />
             <button type="button" onClick={handleCopy} className="inline-flex min-h-10 shrink-0 items-center gap-2 rounded-full bg-white px-3 text-xs font-bold text-brand" aria-label="Copiar enlace de invitación">
-              <CopyIcon aria-hidden="true" size={15} />
+              <Icon icon={Copy} size="sm" aria-hidden="true" />
               {isCopied ? 'Copiado' : 'Copiar'}
             </button>
           </div>

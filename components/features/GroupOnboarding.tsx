@@ -1,8 +1,10 @@
 'use client';
 
 import { useState, type FormEvent } from 'react';
-import { ArrowLeftIcon, ArrowRightIcon, CircleAlertIcon, CircleCheckIcon, PlusIcon, UsersRoundIcon } from 'lucide-react';
+import { ArrowLeft, ArrowRight, CheckCircle, Plus, UsersThree, WarningCircle } from '@phosphor-icons/react';
+
 import { GroupJoinCode } from '@/components/features/GroupJoinCode';
+import { Icon, LoadingIcon } from '@/components/ui/icon';
 import { OPEN_GROUP_ONCE_STORAGE_KEY } from '@/lib/group-state';
 
 interface GroupOnboardingProps {
@@ -51,7 +53,7 @@ export function GroupOnboarding({ onCancel }: GroupOnboardingProps) {
       <main className="divi-page min-h-[100dvh] px-5 pb-[max(2rem,env(safe-area-inset-bottom))] pt-[max(2rem,env(safe-area-inset-top))] text-ink sm:px-7">
         <div className="mx-auto max-w-[500px]">
           <div className="grid size-12 place-items-center rounded-2xl bg-brand-soft text-brand">
-            <CircleCheckIcon aria-hidden="true" size={24} strokeWidth={1.8} />
+            <Icon icon={CheckCircle} size="lg" aria-hidden="true" />
           </div>
           <p className="mt-6 text-sm font-bold uppercase tracking-[0.12em] text-brand">Grupo creado</p>
           <h1 className="mt-2 divi-page-title">Ya pueden sumarse a {createdGroup.name}</h1>
@@ -72,7 +74,7 @@ export function GroupOnboarding({ onCancel }: GroupOnboardingProps) {
             className="mt-6 flex min-h-13 w-full items-center justify-center gap-2 rounded-full bg-brand px-5 text-sm font-bold text-white transition active:scale-[0.98]"
           >
             Ir al grupo
-            <ArrowRightIcon aria-hidden="true" size={17} />
+            <Icon icon={ArrowRight} size="md" aria-hidden="true" />
           </button>
         </div>
       </main>
@@ -88,21 +90,21 @@ export function GroupOnboarding({ onCancel }: GroupOnboardingProps) {
             onClick={onCancel}
             className="inline-flex min-h-11 items-center gap-2 rounded-full px-3 text-sm font-semibold text-copy-muted transition active:scale-[0.98]"
           >
-            <ArrowLeftIcon aria-hidden="true" size={16} />
+            <Icon icon={ArrowLeft} size="sm" aria-hidden="true" />
             Volver al inicio
           </button>
         )}
         <div className="mt-8 space-y-7">
           <div>
             <span className="grid size-12 place-items-center rounded-2xl bg-brand-soft text-brand">
-              <UsersRoundIcon aria-hidden="true" size={23} strokeWidth={1.8} />
+              <Icon icon={UsersThree} size="lg" aria-hidden="true" />
             </span>
             <p className="mt-6 text-sm font-bold uppercase tracking-[0.12em] text-brand">Primer paso</p>
             <h1 className="mt-2 divi-page-title">Creá tu primer grupo</h1>
             <p className="mt-2 text-sm leading-6 text-copy-muted">Después vas a poder sumar a las personas con las que compartís gastos.</p>
           </div>
 
-          <form onSubmit={handleSubmit} className="space-y-4 rounded-[24px] border border-line bg-white p-5 shadow-[0_8px_28px_rgba(31,31,31,0.035)] sm:p-6">
+          <form onSubmit={handleSubmit} className="space-y-4 rounded-[var(--radius-panel)] border border-line bg-white p-5 shadow-[0_8px_28px_rgba(31,31,31,0.035)] sm:p-6">
             <div>
               <label htmlFor="group-name" className="block text-sm font-semibold text-ink">Nombre del grupo</label>
               <input id="group-name" name="name" value={name} onChange={(event) => setName(event.target.value)} placeholder="Ej. Casa Malbec" required minLength={2} maxLength={80} className="mt-2 h-12 w-full rounded-2xl border border-line bg-surface/50 px-4 text-sm outline-none transition placeholder:text-copy-muted focus:border-brand focus:bg-white focus:ring-2 focus:ring-brand/10" />
@@ -113,10 +115,10 @@ export function GroupOnboarding({ onCancel }: GroupOnboardingProps) {
               <input id="member-name" name="memberName" autoComplete="name" value={memberName} onChange={(event) => setMemberName(event.target.value)} placeholder="Ej. Martina" maxLength={80} className="mt-2 h-12 w-full rounded-2xl border border-line bg-surface/50 px-4 text-sm outline-none transition placeholder:text-copy-muted focus:border-brand focus:bg-white focus:ring-2 focus:ring-brand/10" />
             </div>
 
-            {error && <p role="alert" className="flex items-start gap-2 rounded-xl bg-[#fef4f4] px-3 py-2 text-sm font-medium text-danger"><CircleAlertIcon aria-hidden="true" className="mt-0.5 shrink-0" size={16} />{error}</p>}
+            {error && <p role="alert" className="flex items-start gap-2 rounded-xl bg-[#fef4f4] px-3 py-2 text-sm font-medium text-danger"><Icon icon={WarningCircle} size="sm" className="mt-0.5 shrink-0" aria-hidden="true" />{error}</p>}
 
             <button type="submit" disabled={isSubmitting} className="mt-2 flex min-h-13 w-full items-center justify-center gap-2 rounded-full bg-brand px-5 text-sm font-bold text-white transition active:scale-[0.98] disabled:cursor-wait disabled:opacity-50">
-              {isSubmitting ? <span className="size-4 animate-spin rounded-full border-2 border-white/35 border-t-white motion-reduce:animate-none" aria-hidden="true" /> : <PlusIcon aria-hidden="true" size={17} />}
+              {isSubmitting ? <LoadingIcon size="sm" className="text-white" /> : <Icon icon={Plus} size="md" aria-hidden="true" />}
               {isSubmitting ? 'Creando grupo…' : 'Crear grupo'}
             </button>
           </form>

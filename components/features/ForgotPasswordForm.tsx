@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, type FormEvent } from 'react';
-import { MailIcon } from 'lucide-react';
+import { Envelope } from '@phosphor-icons/react';
 import {
   AuthFeedback,
   AuthField,
@@ -71,7 +71,7 @@ export function ForgotPasswordForm() {
       footer={<a href="/login">Volver a iniciar sesión</a>}
     >
       <form onSubmit={handleSubmit} noValidate>
-        <AuthField id="recovery-email" label="Email" icon={MailIcon} error={fieldError}>
+        <AuthField id="recovery-email" label="Email" icon={Envelope} error={fieldError}>
           <input
             id="recovery-email"
             name="email"

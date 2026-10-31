@@ -1,8 +1,9 @@
 'use client';
 
 import { useEffect, useState, type FormEvent } from 'react';
-import { CheckIcon, CircleAlertIcon, LoaderCircleIcon } from 'lucide-react';
+import { Check, WarningCircle } from '@phosphor-icons/react';
 
+import { Icon, LoadingIcon } from '@/components/ui/icon';
 import { parseCurrencyAmount } from '@/lib/movement-draft';
 
 export function MonthlyIncomeSettings() {
@@ -57,7 +58,7 @@ export function MonthlyIncomeSettings() {
   }
 
   return (
-    <section className="mt-7 rounded-[24px] border border-line p-6" aria-labelledby="income-title">
+    <section className="mt-7 rounded-[var(--radius-panel)] border border-line p-6" aria-labelledby="income-title">
       <h2 id="income-title" className="divi-section-title">Ingreso mensual opcional</h2>
       <p className="mt-2 text-sm leading-6 text-copy-muted">
         Solo se usa si elegís dividir un gasto proporcionalmente. Lo podés ver y cambiar únicamente desde tu cuenta.
@@ -81,10 +82,10 @@ export function MonthlyIncomeSettings() {
               <input id="monthly-income" inputMode="decimal" value={income} onChange={(event) => setIncome(event.target.value)} disabled={isSaving} placeholder="Dejalo vacío si no querés usarlo" className="h-full min-w-0 flex-1 rounded-2xl px-3 text-sm outline-none placeholder:text-xs placeholder:text-copy-muted disabled:opacity-60" />
               <span className="pr-4 text-xs text-copy-muted">ARS</span>
             </div>
-            {error && <p role="alert" className="flex items-start gap-2 rounded-xl bg-[#fef4f4] px-3 py-2 text-sm font-medium text-danger"><CircleAlertIcon aria-hidden="true" className="mt-0.5 shrink-0" size={16} />{error}</p>}
-            {notice && <p role="status" className="flex items-center gap-2 rounded-xl bg-[#edf8f0] px-3 py-2 text-sm font-medium text-success"><CheckIcon aria-hidden="true" size={16} />{notice}</p>}
+            {error && <p role="alert" className="flex items-start gap-2 rounded-xl bg-[#fef4f4] px-3 py-2 text-sm font-medium text-danger"><Icon icon={WarningCircle} size="sm" className="mt-0.5 shrink-0" aria-hidden="true" />{error}</p>}
+            {notice && <p role="status" className="flex items-center gap-2 rounded-xl bg-[#edf8f0] px-3 py-2 text-sm font-medium text-success"><Icon icon={Check} size="sm" aria-hidden="true" />{notice}</p>}
             <button type="submit" disabled={isSaving} className="flex min-h-11 w-full items-center justify-center gap-2 rounded-full border border-brand px-4 text-sm font-bold text-brand transition active:scale-[0.98] disabled:opacity-50">
-              {isSaving && <LoaderCircleIcon aria-hidden="true" size={16} className="animate-spin motion-reduce:animate-none" />}
+              {isSaving && <LoadingIcon size="sm" className="text-brand" />}
               {isSaving ? 'Guardando…' : 'Guardar ingreso'}
             </button>
           </>

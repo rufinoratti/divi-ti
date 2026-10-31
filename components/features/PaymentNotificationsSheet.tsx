@@ -1,8 +1,9 @@
 'use client';
 
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { BellIcon, CheckIcon, InboxIcon, XIcon } from 'lucide-react';
+import { Bell, Check, Tray, X } from '@phosphor-icons/react';
 
+import { Icon } from '@/components/ui/icon';
 import { type PaymentNotification } from '@/lib/ledger';
 import { formatARS } from '@/lib/utils';
 import {
@@ -134,7 +135,7 @@ export function PaymentNotificationsSheet({ onPaymentUpdated }: PaymentNotificat
         aria-label={unreadCount > 0 ? `${unreadCount} notificaciones sin leer` : 'Notificaciones'}
         className="relative grid size-11 place-items-center rounded-full border border-line bg-white text-ink transition active:scale-[0.96]"
       >
-        <BellIcon aria-hidden="true" size={19} strokeWidth={1.8} />
+        <Icon icon={Bell} size="md" aria-hidden="true" />
         {unreadCount > 0 && (
           <span aria-hidden="true" className="absolute -right-1 -top-1 grid min-h-5 min-w-5 place-items-center rounded-full bg-danger px-1 text-[10px] font-bold text-white">
             {unreadCount > 9 ? '9+' : unreadCount}
@@ -145,7 +146,7 @@ export function PaymentNotificationsSheet({ onPaymentUpdated }: PaymentNotificat
       <SheetContent
         side="bottom"
         showCloseButton={false}
-        className="max-h-[82dvh] gap-0 overflow-hidden rounded-t-[28px] border-line bg-white pb-[env(safe-area-inset-bottom)]"
+        className="max-h-[82dvh] gap-0 overflow-hidden rounded-t-[var(--radius-panel)] border-line bg-white pb-[env(safe-area-inset-bottom)]"
       >
         <SheetHeader className="relative px-5 pb-4 pt-3 pr-16">
           <span className="mx-auto mb-3 h-1 w-10 rounded-full bg-[#d9d9df]" aria-hidden="true" />
@@ -157,7 +158,7 @@ export function PaymentNotificationsSheet({ onPaymentUpdated }: PaymentNotificat
             aria-label="Cerrar"
             className="absolute right-5 top-5 grid size-10 place-items-center rounded-full bg-surface text-ink"
           >
-            <XIcon aria-hidden="true" size={18} />
+            <Icon icon={X} size="md" aria-hidden="true" />
           </SheetClose>
         </SheetHeader>
 
@@ -184,7 +185,7 @@ export function PaymentNotificationsSheet({ onPaymentUpdated }: PaymentNotificat
           {!isLoading && notifications.length === 0 && !error && (
             <div className="flex flex-col items-center rounded-2xl bg-surface px-5 py-8 text-center">
               <span className="grid size-11 place-items-center rounded-2xl bg-white text-brand">
-                <InboxIcon aria-hidden="true" size={20} strokeWidth={1.8} />
+                <Icon icon={Tray} size="md" aria-hidden="true" />
               </span>
               <p className="mt-3 text-sm font-semibold text-ink">Todo al día</p>
               <p className="mt-1 text-sm text-copy-muted">No hay notificaciones por ahora.</p>
@@ -210,7 +211,7 @@ export function PaymentNotificationsSheet({ onPaymentUpdated }: PaymentNotificat
                         onClick={() => { void handlePaymentResponse(notification, 'reject'); }}
                         className="inline-flex min-h-11 items-center justify-center gap-1 rounded-full border border-line px-3 text-sm font-bold text-copy-muted transition hover:bg-surface disabled:opacity-50"
                       >
-                        <XIcon aria-hidden="true" size={15} />
+                        <Icon icon={X} size="sm" aria-hidden="true" />
                         No lo recibí
                       </button>
                       <button
@@ -219,7 +220,7 @@ export function PaymentNotificationsSheet({ onPaymentUpdated }: PaymentNotificat
                         onClick={() => { void handlePaymentResponse(notification, 'confirm'); }}
                         className="inline-flex min-h-11 items-center justify-center gap-1 rounded-full bg-brand px-3 text-sm font-bold text-white transition hover:bg-brand-strong disabled:opacity-50"
                       >
-                        <CheckIcon aria-hidden="true" size={15} />
+                        <Icon icon={Check} size="sm" aria-hidden="true" />
                         {isBusy ? 'Guardando…' : 'Confirmar'}
                       </button>
                     </div>

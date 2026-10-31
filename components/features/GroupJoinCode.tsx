@@ -1,7 +1,9 @@
 'use client';
 
-import { CheckIcon, CopyIcon, UsersRoundIcon } from 'lucide-react';
+import { Check, Copy, UsersThree } from '@phosphor-icons/react';
 import { useState } from 'react';
+
+import { Icon } from '@/components/ui/icon';
 
 interface GroupJoinCodeProps {
   code: string;
@@ -27,9 +29,9 @@ export function GroupJoinCode({ code, groupName }: GroupJoinCodeProps) {
   }
 
   return (
-    <section className="mt-7 rounded-[24px] border border-line p-6" aria-labelledby="group-join-code-title">
+    <section className="mt-7 rounded-[var(--radius-panel)] border border-line p-6" aria-labelledby="group-join-code-title">
       <div className="flex items-center gap-3 text-brand">
-        <UsersRoundIcon aria-hidden="true" size={22} strokeWidth={1.8} />
+        <Icon icon={UsersThree} size="lg" aria-hidden="true" />
         <h2 id="group-join-code-title" className="text-lg font-bold tracking-[-0.03em] text-ink">
           Código para unirse
         </h2>
@@ -49,8 +51,8 @@ export function GroupJoinCode({ code, groupName }: GroupJoinCodeProps) {
           aria-label="Copiar código del grupo"
         >
           {copyMessage === 'Código copiado'
-            ? <CheckIcon aria-hidden="true" size={15} />
-            : <CopyIcon aria-hidden="true" size={15} />}
+            ? <Icon icon={Check} size="sm" aria-hidden="true" />
+            : <Icon icon={Copy} size="sm" aria-hidden="true" />}
           {copyMessage === 'Código copiado' ? 'Copiado' : 'Copiar'}
         </button>
       </div>

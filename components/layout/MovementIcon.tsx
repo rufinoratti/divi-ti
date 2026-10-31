@@ -1,34 +1,35 @@
 'use client';
 
 import {
-  Building2Icon,
-  CarFrontIcon,
-  HandCoinsIcon,
-  ReceiptTextIcon,
-  ShoppingBagIcon,
-  UtensilsIcon,
-} from 'lucide-react';
+  Buildings,
+  Car,
+  ForkKnife,
+  HandCoins,
+  Receipt,
+  ShoppingBag,
+} from '@phosphor-icons/react';
+import { Icon, type PhosphorIcon } from '@/components/ui/icon';
 import { type MovementCategory } from '@/lib/ledger';
 
 interface MovementIconProps {
   category: MovementCategory;
 }
 
-const categoryToIcon: Record<MovementCategory, React.ElementType> = {
-  Alquiler: Building2Icon,
-  Comida: UtensilsIcon,
-  Transporte: CarFrontIcon,
-  Compras: ShoppingBagIcon,
-  Otros: ReceiptTextIcon,
-  Préstamo: HandCoinsIcon,
+const categoryToIcon: Record<MovementCategory, PhosphorIcon> = {
+  Alquiler: Buildings,
+  Comida: ForkKnife,
+  Transporte: Car,
+  Compras: ShoppingBag,
+  Otros: Receipt,
+  Préstamo: HandCoins,
 };
 
 export function MovementIcon({ category }: MovementIconProps) {
-  const Icon = categoryToIcon[category] ?? HandCoinsIcon;
+  const Glyph = categoryToIcon[category] ?? HandCoins;
 
   return (
-    <span className="grid size-11 shrink-0 place-items-center rounded-[16px] bg-brand-soft text-brand">
-      <Icon aria-hidden="true" size={19} strokeWidth={1.75} />
+    <span className="divi-icon-well size-11 rounded-[var(--radius-control)]">
+      <Icon icon={Glyph} size="md" aria-hidden="true" />
     </span>
   );
 }

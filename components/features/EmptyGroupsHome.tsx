@@ -1,9 +1,10 @@
 'use client';
 
-import { ArrowRightIcon, CheckIcon, Link2Icon, LogOutIcon, PlusIcon, UsersRoundIcon } from 'lucide-react';
+import { ArrowRight, Check, LinkSimple, Plus, SignOut, UsersThree } from '@phosphor-icons/react';
 import { useRouter } from 'next/navigation';
 import { useState, type FormEvent } from 'react';
 
+import { Icon } from '@/components/ui/icon';
 import { useAuth } from '@/hooks/useAuth';
 
 interface EmptyGroupsHomeProps {
@@ -99,7 +100,7 @@ export function EmptyGroupsHome({ email, onCreateGroup }: EmptyGroupsHomeProps) 
             onClick={handleLogout}
             className="inline-flex min-h-11 items-center gap-2 rounded-full px-3 text-sm font-semibold text-copy-muted transition active:scale-[0.97]"
           >
-            <LogOutIcon aria-hidden="true" size={17} strokeWidth={1.8} />
+            <Icon icon={SignOut} size="md" aria-hidden="true" />
             Salir
           </button>
         </header>
@@ -109,9 +110,9 @@ export function EmptyGroupsHome({ email, onCreateGroup }: EmptyGroupsHomeProps) 
           <h1 className="divi-page-title mt-2">Bienvenido a Divi</h1>
           <p className="mt-2 text-sm leading-6 text-copy-muted">Organizá los gastos con las personas con las que compartís.</p>
 
-          <div className="mt-7 rounded-[24px] border border-line bg-white p-5 shadow-[0_8px_28px_rgba(31,31,31,0.035)] sm:p-7">
+          <div className="mt-7 rounded-[var(--radius-panel)] border border-line bg-white p-5 shadow-[0_8px_28px_rgba(31,31,31,0.035)] sm:p-7">
             <div className="grid size-12 place-items-center rounded-2xl bg-brand-soft text-brand">
-              <UsersRoundIcon aria-hidden="true" size={23} strokeWidth={1.8} />
+              <Icon icon={UsersThree} size="lg" aria-hidden="true" />
             </div>
             <h2 id="empty-groups-title" className="mt-4 divi-section-title text-xl">
               Empezá con un grupo
@@ -123,7 +124,7 @@ export function EmptyGroupsHome({ email, onCreateGroup }: EmptyGroupsHomeProps) 
 
             <form onSubmit={handleJoinGroup} className="mt-6 space-y-3">
               <label htmlFor="invitation-link" className="flex items-center gap-2 text-sm font-bold text-ink">
-                <Link2Icon aria-hidden="true" size={16} className="text-brand" />
+                <Icon icon={LinkSimple} size="sm" className="text-brand" aria-hidden="true" />
                 ¿Ya tenés una invitación?
               </label>
               <p className="-mt-1 text-xs leading-5 text-copy-muted">
@@ -149,14 +150,14 @@ export function EmptyGroupsHome({ email, onCreateGroup }: EmptyGroupsHomeProps) 
                 className="h-12 w-full rounded-2xl border border-line bg-surface/50 px-4 text-sm outline-none transition focus:border-brand focus:bg-white focus:ring-2 focus:ring-brand/10 placeholder:text-copy-muted"
               />
               {invitationError && <p id="invitation-link-error" role="alert" className="rounded-xl bg-[#fef4f4] px-3 py-2 text-sm font-medium text-danger">{invitationError}</p>}
-              {invitationSuccess && <p role="status" className="flex items-start gap-2 rounded-xl bg-[#edf8f0] px-3 py-2 text-sm font-medium text-success"><CheckIcon aria-hidden="true" className="mt-0.5 shrink-0" size={16} />{invitationSuccess}</p>}
+              {invitationSuccess && <p role="status" className="flex items-start gap-2 rounded-xl bg-[#edf8f0] px-3 py-2 text-sm font-medium text-success"><Icon icon={Check} size="sm" className="mt-0.5 shrink-0" aria-hidden="true" />{invitationSuccess}</p>}
               <button
                 type="submit"
                 disabled={isJoining}
                 className="flex min-h-12 w-full items-center justify-center gap-2 rounded-full bg-brand px-5 text-sm font-bold text-white transition active:scale-[0.98] disabled:cursor-wait disabled:opacity-60"
               >
                 {isJoining ? 'Uniéndote al grupo…' : 'Unirme al grupo'}
-                {!isJoining && <ArrowRightIcon aria-hidden="true" size={17} />}
+                {!isJoining && <Icon icon={ArrowRight} size="md" aria-hidden="true" />}
               </button>
             </form>
 
@@ -167,7 +168,7 @@ export function EmptyGroupsHome({ email, onCreateGroup }: EmptyGroupsHomeProps) 
                 onClick={onCreateGroup}
                 className="mt-3 flex min-h-12 w-full items-center justify-center gap-2 rounded-full border border-line px-5 text-sm font-bold text-ink transition active:scale-[0.98]"
               >
-                <PlusIcon aria-hidden="true" size={17} className="text-brand" />
+                <Icon icon={Plus} size="md" className="text-brand" aria-hidden="true" />
                 Crear grupo
               </button>
             </div>

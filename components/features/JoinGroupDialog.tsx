@@ -1,8 +1,9 @@
 'use client';
 
 import { useId, useState, type FormEvent } from 'react';
-import { KeyRoundIcon, XIcon } from 'lucide-react';
+import { Key, X } from '@phosphor-icons/react';
 
+import { Icon } from '@/components/ui/icon';
 import { Dialog, DialogClose, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { OPEN_GROUP_ONCE_STORAGE_KEY } from '@/lib/group-state';
 
@@ -71,16 +72,16 @@ export function JoinGroupDialog({ compact = false, compactLabel = 'Unirme con un
             : 'inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-2xl border border-line px-5 text-sm font-bold text-ink transition active:scale-[0.98]'
           : 'mt-5 inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-full border border-line px-5 text-sm font-bold text-ink transition active:scale-[0.98]'}
       >
-        <KeyRoundIcon aria-hidden="true" size={17} />
+        <Icon icon={Key} size="md" aria-hidden="true" />
         {compactLabel}
       </DialogTrigger>
 
-      <DialogContent showCloseButton={false} className="max-w-[calc(100%-2rem)] rounded-[24px] bg-white p-6 sm:max-w-md">
+      <DialogContent showCloseButton={false} className="max-w-[calc(100%-2rem)] rounded-[var(--radius-panel)] bg-white p-6 sm:max-w-md">
         <DialogClose
           aria-label="Cerrar"
           className="absolute right-4 top-4 grid size-10 place-items-center rounded-full bg-surface text-ink"
         >
-          <XIcon aria-hidden="true" size={18} />
+          <Icon icon={X} size="md" aria-hidden="true" />
           <span className="sr-only">Cerrar</span>
         </DialogClose>
         <form onSubmit={handleSubmit}>
