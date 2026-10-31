@@ -2,8 +2,10 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { LogOutIcon, UsersIcon } from 'lucide-react';
+import { SignOut, Users } from '@phosphor-icons/react';
+
 import { Avatar } from '@/components/layout/Avatar';
+import { Icon } from '@/components/ui/icon';
 import { ProfileRow } from '@/components/layout/ProfileRow';
 import { type Member } from '@/lib/ledger';
 import { InviteMemberForm } from '@/components/features/InviteMemberForm';
@@ -51,16 +53,16 @@ export function ProfileSection({ currentMemberId, members, profileMember, accoun
 
   return (
     <section className="mt-8" aria-labelledby="profile-title">
-      <h1 id="profile-title" className="text-3xl font-bold tracking-[-0.045em]">Perfil</h1>
-      <section className="mt-7 rounded-[30px] bg-[#f6f6f6] p-6">
+      <h1 id="profile-title" className="divi-page-title">Perfil</h1>
+      <section className="mt-7 rounded-[var(--radius-panel)] bg-surface p-6">
         <div className="flex items-center gap-4">
           <Avatar member={currentMember} />
           <div>
             <p className="text-lg font-bold tracking-[-0.03em]">{currentMember.name}</p>
-            <p className="text-sm text-[#5d5d5d]">{allGroupsView ? 'Tu cuenta Divi' : `Integrante de ${groupName || 'tu grupo'}`}</p>
+            <p className="text-sm text-copy-muted">{allGroupsView ? 'Tu cuenta Divi' : `Integrante de ${groupName || 'tu grupo'}`}</p>
           </div>
         </div>
-        <div className="mt-6 space-y-4 border-t border-[#e7e7e7] pt-5 text-sm">
+        <div className="mt-6 space-y-4 border-t border-line pt-5 text-sm">
           {accountEmail && <ProfileRow label="Email" value={accountEmail} />}
           {allGroupsView && <ProfileRow label="Grupos" value={`${groupCount} grupos`} />}
           <ProfileRow label="Idioma" value="Español" />
@@ -72,47 +74,47 @@ export function ProfileSection({ currentMemberId, members, profileMember, accoun
       {canInvite && groupId && <InviteMemberForm groupId={groupId} />}
       <MonthlyIncomeSettings />
 
-      <section className="mt-7 rounded-[30px] border border-[#e7e7e7] p-6">
-        <UsersIcon aria-hidden="true" size={23} className="text-[#594ff4]" strokeWidth={1.8} />
-        <h2 className="mt-4 text-xl font-bold tracking-[-0.035em]">Tu espacio compartido</h2>
-        <p className="mt-2 text-sm leading-6 text-[#5d5d5d]">
+      <section className="mt-7 rounded-[var(--radius-panel)] border border-line p-6">
+        <Icon icon={Users} size="lg" className="text-brand" aria-hidden="true" />
+        <h2 className="mt-4 divi-section-title">Tu espacio compartido</h2>
+        <p className="mt-2 text-sm leading-6 text-copy-muted">
           Tus grupos, integrantes y movimientos quedan vinculados a tu cuenta para que puedas retomarlos cuando quieras.
         </p>
       </section>
       <CreateGroupDialog />
 
-      <section className="mt-8 border-t border-[#e7e7e7] pt-6" aria-label="Sesión">
+      <section className="mt-8 border-t border-line pt-6" aria-label="Sesión">
         <button
           type="button"
           onClick={() => setLogoutConfirmationOpen(true)}
-          className="flex min-h-12 w-full items-center justify-center gap-2 rounded-full border border-[#f0c8c4] px-5 text-sm font-bold text-[#b42318] transition hover:bg-[#fef4f4] active:scale-[0.98]"
+          className="flex min-h-12 w-full items-center justify-center gap-2 rounded-full border border-[#f0c8c4] px-5 text-sm font-bold text-danger transition hover:bg-[#fef4f4] active:scale-[0.98]"
         >
-          <LogOutIcon aria-hidden="true" size={17} strokeWidth={1.8} />
+          <Icon icon={SignOut} size="md" aria-hidden="true" />
           Cerrar sesión
         </button>
       </section>
 
       <AlertDialog open={logoutConfirmationOpen} onOpenChange={setLogoutConfirmationOpen}>
-        <AlertDialogContent className="max-w-[calc(100%-2rem)] rounded-[28px] border border-[#e7e7e7] bg-white p-6 sm:max-w-sm">
+        <AlertDialogContent className="max-w-[calc(100%-2rem)] rounded-[var(--radius-panel)] border border-line bg-white p-6 sm:max-w-sm">
           <AlertDialogHeader className="text-left">
-            <AlertDialogTitle className="text-xl font-bold tracking-[-0.035em]">
+            <AlertDialogTitle className="divi-section-title text-lg font-bold">
               ¿Querés cerrar sesión?
             </AlertDialogTitle>
-            <AlertDialogDescription className="leading-6 text-[#5d5d5d]">
+            <AlertDialogDescription className="leading-6 text-copy-muted">
               Vas a salir de tu cuenta de Divi.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter className="mx-0 mb-0 grid grid-cols-2 gap-3 rounded-none border-0 bg-transparent p-0">
             <AlertDialogCancel
               disabled={isLoggingOut}
-              className="min-h-12 rounded-full border-[#e7e7e7] bg-white px-4 text-sm font-bold text-[#1f1f1f] hover:bg-[#f6f6f6]"
+              className="min-h-12 rounded-full border-line bg-white px-4 text-sm font-bold text-ink hover:bg-surface"
             >
               No, quedarme
             </AlertDialogCancel>
             <AlertDialogAction
               disabled={isLoggingOut}
               onClick={() => { void handleLogout(); }}
-              className="min-h-12 rounded-full bg-[#b42318] px-4 text-sm font-bold text-white hover:bg-[#912018]"
+              className="min-h-12 rounded-full bg-danger px-4 text-sm font-bold text-white hover:bg-[#912018]"
             >
               {isLoggingOut ? 'Saliendo...' : 'Sí, cerrar sesión'}
             </AlertDialogAction>

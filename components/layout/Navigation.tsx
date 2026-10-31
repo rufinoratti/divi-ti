@@ -2,11 +2,12 @@
 
 import { type Tab } from '@/hooks/useMovements';
 import {
-  HomeIcon,
-  ChartNoAxesCombinedIcon,
-  WalletCardsIcon,
-  UserRoundIcon,
-} from 'lucide-react';
+  ChartLineUp,
+  House,
+  User,
+  Wallet,
+} from '@phosphor-icons/react';
+import { Icon } from '@/components/ui/icon';
 
 interface NavigationProps {
   activeTab: Tab;
@@ -14,27 +15,26 @@ interface NavigationProps {
 }
 
 const navigation = [
-  { id: 'inicio' as const, label: 'Inicio', icon: HomeIcon },
-  { id: 'actividad' as const, label: 'Actividad', icon: ChartNoAxesCombinedIcon },
-  { id: 'balance' as const, label: 'Balance', icon: WalletCardsIcon },
-  { id: 'perfil' as const, label: 'Perfil', icon: UserRoundIcon },
+  { id: 'inicio' as const, label: 'Inicio', icon: House },
+  { id: 'actividad' as const, label: 'Actividad', icon: ChartLineUp },
+  { id: 'balance' as const, label: 'Balance', icon: Wallet },
+  { id: 'perfil' as const, label: 'Perfil', icon: User },
 ];
 
 export function Navigation({ activeTab, onTabChange }: NavigationProps) {
   const activeIndex = navigation.findIndex((item) => item.id === activeTab);
 
   return (
-    <nav aria-label="Navegación principal" className="fixed inset-x-0 bottom-0 border-t border-[#e7e7e7] bg-white/95 px-4 pb-[calc(max(0.75rem,env(safe-area-inset-bottom))_+_0.75rem)] pt-3 backdrop-blur-sm">
-      <div className="relative mx-auto grid max-w-[500px] grid-cols-4">
+    <nav aria-label="Navegación principal" className="app-navigation fixed inset-x-0 bottom-0 z-30 px-4 pt-2">
+      <div className="relative mx-auto grid max-w-[500px] grid-cols-4 gap-1">
         <span
           aria-hidden="true"
-          className="pointer-events-none absolute inset-y-0 left-0 z-0 w-1/4 transition-transform duration-500 [transition-timing-function:cubic-bezier(0.175,0.885,0.32,1.1)] motion-reduce:transition-none"
+          className="pointer-events-none absolute inset-y-0 left-0 z-0 w-1/4 transition-transform duration-300 [transition-timing-function:cubic-bezier(0.22,1,0.36,1)] motion-reduce:transition-none"
           style={{ transform: `translateX(${activeIndex * 100}%)` }}
         >
-          <span className="absolute inset-1 rounded-2xl bg-[#efedff]" />
+          <span className="absolute inset-1 rounded-[var(--radius-control)] bg-brand-soft" />
         </span>
         {navigation.map((item) => {
-          const Icon = item.icon;
           const isActive = activeTab === item.id;
           return (
             <button
@@ -42,9 +42,9 @@ export function Navigation({ activeTab, onTabChange }: NavigationProps) {
               type="button"
               onClick={() => onTabChange(item.id)}
               aria-current={isActive ? 'page' : undefined}
-              className={`relative z-10 flex min-h-14 flex-col items-center justify-center gap-1 rounded-2xl text-xs font-bold transition-colors duration-150 ${isActive ? 'text-[#594ff4]' : 'text-[#5d5d5d]'}`}
+              className={`relative z-10 flex min-h-[3.4rem] flex-col items-center justify-center gap-0.5 rounded-[var(--radius-control)] text-[0.68rem] font-semibold transition-colors duration-150 ${isActive ? 'text-brand' : 'text-copy-muted'}`}
             >
-              <Icon aria-hidden="true" size={20} strokeWidth={isActive ? 2.15 : 1.8} />
+              <Icon icon={item.icon} size="md" weight={isActive ? 'fill' : 'regular'} aria-hidden="true" />
               {item.label}
             </button>
           );

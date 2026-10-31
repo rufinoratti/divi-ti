@@ -1,7 +1,9 @@
 'use client';
 
 import { useState, type FormEvent } from 'react';
-import { EyeIcon, EyeOffIcon, LockIcon } from 'lucide-react';
+import { Eye, EyeSlash, Lock } from '@phosphor-icons/react';
+
+import { Icon } from '@/components/ui/icon';
 import {
   AuthFeedback,
   AuthField,
@@ -83,7 +85,7 @@ export function ResetPasswordForm() {
       footer={<a href="/login">Volver a iniciar sesión</a>}
     >
       <form onSubmit={handleSubmit} noValidate>
-        <AuthField id="new-password" label="Nueva contraseña" icon={LockIcon} error={fieldErrors.password}>
+        <AuthField id="new-password" label="Nueva contraseña" icon={Lock} error={fieldErrors.password}>
           <input
             id="new-password"
             name="password"
@@ -103,10 +105,10 @@ export function ResetPasswordForm() {
             onClick={() => setShowPasswords((visible) => !visible)}
             aria-label={showPasswords ? 'Ocultar contraseña' : 'Mostrar contraseña'}
           >
-            {showPasswords ? <EyeOffIcon aria-hidden="true" /> : <EyeIcon aria-hidden="true" />}
+            {showPasswords ? <Icon icon={EyeSlash} size="sm" aria-hidden="true" /> : <Icon icon={Eye} size="sm" aria-hidden="true" />}
           </button>
         </AuthField>
-        <AuthField id="confirm-password" label="Repetí la contraseña" icon={LockIcon} error={fieldErrors.confirmPassword}>
+        <AuthField id="confirm-password" label="Repetí la contraseña" icon={Lock} error={fieldErrors.confirmPassword}>
           <input
             id="confirm-password"
             name="confirmPassword"
@@ -126,7 +128,7 @@ export function ResetPasswordForm() {
             onClick={() => setShowPasswords((visible) => !visible)}
             aria-label={showPasswords ? 'Ocultar contraseña' : 'Mostrar contraseña'}
           >
-            {showPasswords ? <EyeOffIcon aria-hidden="true" /> : <EyeIcon aria-hidden="true" />}
+            {showPasswords ? <Icon icon={EyeSlash} size="sm" aria-hidden="true" /> : <Icon icon={Eye} size="sm" aria-hidden="true" />}
           </button>
         </AuthField>
         <AuthFeedback message={error} variant="error" />

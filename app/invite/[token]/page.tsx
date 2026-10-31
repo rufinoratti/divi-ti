@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useParams } from 'next/navigation';
 
+import { AccessBrand, AccessWave } from '@/components/features/AuthPageFrame';
 import { AuthLoading } from '@/components/layout/AuthLoading';
 import { useAuth } from '@/hooks/useAuth';
 import { OPEN_GROUP_ONCE_STORAGE_KEY } from '@/lib/group-state';
@@ -62,35 +63,45 @@ export default function InvitePage() {
 
   if (status === 'login') {
     return (
-      <main className="min-h-[100dvh] bg-white px-5 py-12 text-[#1f1f1f]">
-        <div className="mx-auto max-w-[500px] space-y-6 text-center">
-          <img src="/branding/divi-lockup.png" alt="Divi" className="mx-auto h-10 w-auto object-contain" />
-          <div>
-            <h1 className="text-3xl font-bold tracking-[-0.05em]">Te invitaron a un grupo</h1>
-            <p className="mt-3 text-[#5d5d5d]">Iniciá sesión o creá tu cuenta para sumarte.</p>
-          </div>
-          <div className="grid gap-3">
-            <a href={`/login?next=${encodeURIComponent(nextPath)}`} className="flex min-h-13 items-center justify-center rounded-full bg-[#594ff4] px-5 text-sm font-bold text-white">
-              Iniciar sesión
-            </a>
-            <a href={`/signup?next=${encodeURIComponent(nextPath)}`} className="flex min-h-13 items-center justify-center rounded-full border border-[#e7e7e7] px-5 text-sm font-bold text-[#1f1f1f]">
-              Crear cuenta
-            </a>
-          </div>
+      <main className="access-page">
+        <div className="access-shell access-shell-single">
+          <section className="access-hero">
+            <div className="access-hero-inner">
+              <AccessBrand tone="light" />
+              <header className="access-hero-mobile access-hero-always">
+                <h1>Te invitaron a un grupo</h1>
+                <p>Iniciá sesión o creá tu cuenta para sumarte.</p>
+              </header>
+            </div>
+            <AccessWave className="access-wave access-wave-bottom" />
+          </section>
+          <section className="access-sheet access-sheet-actions">
+            <div className="access-actions">
+              <a href={`/login?next=${encodeURIComponent(nextPath)}`} className="access-primary access-primary-on-sheet">Iniciar sesión</a>
+              <a href={`/signup?next=${encodeURIComponent(nextPath)}`} className="access-secondary">Crear cuenta</a>
+            </div>
+          </section>
         </div>
       </main>
     );
   }
 
   return (
-    <main className="min-h-[100dvh] bg-white px-5 py-12 text-[#1f1f1f]">
-      <div className="mx-auto max-w-[500px] space-y-5 text-center">
-        <img src="/branding/divi-lockup.png" alt="Divi" className="mx-auto h-10 w-auto object-contain" />
-        <h1 className="text-3xl font-bold tracking-[-0.05em]">{status === 'success' ? 'Bienvenido al grupo' : 'No pudimos aceptar la invitación'}</h1>
-        <p className="text-[#5d5d5d]">{message}</p>
-        <a href="/" className="inline-flex min-h-13 items-center justify-center rounded-full bg-[#594ff4] px-5 text-sm font-bold text-white">
-          Volver a Divi
-        </a>
+    <main className="access-page">
+      <div className="access-shell access-shell-single">
+        <section className="access-hero">
+          <div className="access-hero-inner">
+            <AccessBrand tone="light" />
+            <header className="access-hero-mobile access-hero-always">
+              <h1>{status === 'success' ? 'Bienvenido al grupo' : 'No pudimos aceptar la invitación'}</h1>
+              <p>{message}</p>
+            </header>
+          </div>
+          <AccessWave className="access-wave access-wave-bottom" />
+        </section>
+        <section className="access-sheet access-sheet-actions">
+          <a href="/" className="access-primary access-primary-on-sheet">Volver a Divi</a>
+        </section>
       </div>
     </main>
   );

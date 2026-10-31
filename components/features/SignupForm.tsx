@@ -1,7 +1,9 @@
 'use client';
 
 import { useState, type FormEvent } from 'react';
-import { EyeIcon, EyeOffIcon, LockIcon, MailIcon, UserIcon } from 'lucide-react';
+import { Envelope, Eye, EyeSlash, Lock, User } from '@phosphor-icons/react';
+
+import { Icon } from '@/components/ui/icon';
 import {
   AuthFeedback,
   AuthField,
@@ -93,7 +95,7 @@ export function SignupForm({ onSignup, error }: SignupFormProps) {
       footer={<>¿Ya tenés cuenta? <a href="/login">Iniciá sesión</a></>}
     >
       <form onSubmit={handleSubmit} noValidate>
-        <AuthField id="name" label="Nombre" icon={UserIcon} error={fieldErrors.name}>
+        <AuthField id="name" label="Nombre" icon={User} error={fieldErrors.name}>
           <input
             id="name"
             name="name"
@@ -106,7 +108,7 @@ export function SignupForm({ onSignup, error }: SignupFormProps) {
             aria-describedby={fieldErrors.name ? 'name-error' : undefined}
           />
         </AuthField>
-        <AuthField id="email" label="Email" icon={MailIcon} error={fieldErrors.email}>
+        <AuthField id="email" label="Email" icon={Envelope} error={fieldErrors.email}>
           <input
             id="email"
             name="email"
@@ -120,7 +122,7 @@ export function SignupForm({ onSignup, error }: SignupFormProps) {
             aria-describedby={fieldErrors.email ? 'email-error' : undefined}
           />
         </AuthField>
-        <AuthField id="password" label="Contraseña" icon={LockIcon} error={fieldErrors.password}>
+        <AuthField id="password" label="Contraseña" icon={Lock} error={fieldErrors.password}>
           <input
             id="password"
             name="password"
@@ -140,7 +142,7 @@ export function SignupForm({ onSignup, error }: SignupFormProps) {
             onClick={() => setShowPassword((visible) => !visible)}
             aria-label={showPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'}
           >
-            {showPassword ? <EyeOffIcon aria-hidden="true" /> : <EyeIcon aria-hidden="true" />}
+            {showPassword ? <Icon icon={EyeSlash} size="sm" aria-hidden="true" /> : <Icon icon={Eye} size="sm" aria-hidden="true" />}
           </button>
         </AuthField>
         <AuthFeedback message={formError} variant="error" />

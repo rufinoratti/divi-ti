@@ -1,9 +1,10 @@
 'use client';
 
-import { LogOutIcon, UsersRoundIcon } from 'lucide-react';
+import { ArrowRight, Check, LinkSimple, Plus, SignOut, UsersThree } from '@phosphor-icons/react';
 import { useRouter } from 'next/navigation';
 import { useState, type FormEvent } from 'react';
 
+import { Icon } from '@/components/ui/icon';
 import { useAuth } from '@/hooks/useAuth';
 
 interface EmptyGroupsHomeProps {
@@ -90,42 +91,44 @@ export function EmptyGroupsHome({ email, onCreateGroup }: EmptyGroupsHomeProps) 
   }
 
   return (
-    <main className="min-h-[100dvh] bg-white px-5 pb-10 pt-6 text-[#1f1f1f] sm:px-7">
-      <div className="mx-auto max-w-[500px]">
+    <main className="divi-page">
+      <div className="mx-auto min-h-[100dvh] w-full max-w-[500px] px-5 pb-[max(2rem,env(safe-area-inset-bottom))] pt-[max(1.5rem,env(safe-area-inset-top))] text-ink sm:px-7">
         <header className="flex items-center justify-between">
           <img src="/branding/divi-lockup.png" alt="Divi" className="h-9 w-auto object-contain" />
           <button
             type="button"
             onClick={handleLogout}
-            className="inline-flex min-h-11 items-center gap-2 rounded-full px-3 text-sm font-semibold text-[#5d5d5d] transition hover:bg-[#f6f6f6] active:scale-[0.97]"
+            className="inline-flex min-h-11 items-center gap-2 rounded-full px-3 text-sm font-semibold text-copy-muted transition active:scale-[0.97]"
           >
-            <LogOutIcon aria-hidden="true" size={17} strokeWidth={1.8} />
+            <Icon icon={SignOut} size="md" aria-hidden="true" />
             Salir
           </button>
         </header>
 
-        <section className="mt-16" aria-labelledby="empty-groups-title">
-          <p className="text-sm font-bold uppercase tracking-[0.12em] text-[#594ff4]">Inicio</p>
-          <h1 className="mt-2 text-3xl font-bold tracking-[-0.05em]">Bienvenido a Divi</h1>
+        <section className="mt-12" aria-labelledby="empty-groups-title">
+          <p className="text-sm font-bold uppercase tracking-[0.12em] text-brand">Tu espacio compartido</p>
+          <h1 className="divi-page-title mt-2">Bienvenido a Divi</h1>
+          <p className="mt-2 text-sm leading-6 text-copy-muted">Organizá los gastos con las personas con las que compartís.</p>
 
-          <div className="mt-8 rounded-[30px] border border-[#e7e7e7] bg-white p-6 sm:p-8">
-            <div className="grid size-12 place-items-center rounded-2xl bg-[#f1f0ff] text-[#594ff4]">
-              <UsersRoundIcon aria-hidden="true" size={23} strokeWidth={1.8} />
+          <div className="mt-7 rounded-[var(--radius-panel)] border border-line bg-white p-5 shadow-[0_8px_28px_rgba(31,31,31,0.035)] sm:p-7">
+            <div className="grid size-12 place-items-center rounded-2xl bg-brand-soft text-brand">
+              <Icon icon={UsersThree} size="lg" aria-hidden="true" />
             </div>
-            <h2 id="empty-groups-title" className="mt-5 text-2xl font-bold tracking-[-0.04em]">
-              Todavía no hay grupos
+            <h2 id="empty-groups-title" className="mt-4 divi-section-title text-xl">
+              Empezá con un grupo
             </h2>
-            <p className="mt-2 text-[15px] leading-6 text-[#5d5d5d]">
-              {email ? `Iniciaste sesión como ${email}. ` : ''}
-              Cuando crees un grupo o aceptes una invitación, va a aparecer acá.
+            <p className="mt-2 text-sm leading-6 text-copy-muted">
+              {email ? <>Iniciaste sesión como <span className="font-semibold text-ink">{email}</span>. </> : ''}
+              Creá un grupo nuevo o sumate con la invitación que te compartieron.
             </p>
 
             <form onSubmit={handleJoinGroup} className="mt-6 space-y-3">
-              <label htmlFor="invitation-link" className="block text-sm font-semibold text-[#1f1f1f]">
-                ¿Te invitaron a un grupo? Pegá el código o enlace acá.
+              <label htmlFor="invitation-link" className="flex items-center gap-2 text-sm font-bold text-ink">
+                <Icon icon={LinkSimple} size="sm" className="text-brand" aria-hidden="true" />
+                ¿Ya tenés una invitación?
               </label>
-              <p className="-mt-1 text-sm leading-5 text-[#5d5d5d]">
-                El código o enlace te suma directamente al grupo al que te invitaron.
+              <p className="-mt-1 text-xs leading-5 text-copy-muted">
+                Pegá el código o enlace y te sumamos directamente.
               </p>
               <input
                 id="invitation-link"
@@ -144,26 +147,28 @@ export function EmptyGroupsHome({ email, onCreateGroup }: EmptyGroupsHomeProps) 
                 required
                 aria-invalid={Boolean(invitationError)}
                 aria-describedby={invitationError ? 'invitation-link-error' : undefined}
-                className="h-12 w-full rounded-2xl border border-[#e7e7e7] bg-white px-4 text-sm outline-none placeholder:text-[#888888] focus:border-[#594ff4]"
+                className="h-12 w-full rounded-2xl border border-line bg-surface/50 px-4 text-sm outline-none transition focus:border-brand focus:bg-white focus:ring-2 focus:ring-brand/10 placeholder:text-copy-muted"
               />
-              {invitationError && <p id="invitation-link-error" role="alert" className="text-sm font-medium text-[#b42318]">{invitationError}</p>}
-              {invitationSuccess && <p role="status" className="text-sm font-medium text-[#247446]">{invitationSuccess}</p>}
+              {invitationError && <p id="invitation-link-error" role="alert" className="rounded-xl bg-[#fef4f4] px-3 py-2 text-sm font-medium text-danger">{invitationError}</p>}
+              {invitationSuccess && <p role="status" className="flex items-start gap-2 rounded-xl bg-[#edf8f0] px-3 py-2 text-sm font-medium text-success"><Icon icon={Check} size="sm" className="mt-0.5 shrink-0" aria-hidden="true" />{invitationSuccess}</p>}
               <button
                 type="submit"
                 disabled={isJoining}
-                className="flex min-h-12 w-full items-center justify-center rounded-full bg-[#594ff4] px-5 text-sm font-bold text-white transition hover:bg-[#4c42e8] active:scale-[0.98] disabled:cursor-wait disabled:opacity-60"
+                className="flex min-h-12 w-full items-center justify-center gap-2 rounded-full bg-brand px-5 text-sm font-bold text-white transition active:scale-[0.98] disabled:cursor-wait disabled:opacity-60"
               >
                 {isJoining ? 'Uniéndote al grupo…' : 'Unirme al grupo'}
+                {!isJoining && <Icon icon={ArrowRight} size="md" aria-hidden="true" />}
               </button>
             </form>
 
-            <div className="mt-6 border-t border-[#e7e7e7] pt-5">
-              <p className="text-sm leading-5 text-[#5d5d5d]">¿Preferís empezar uno nuevo?</p>
+            <div className="mt-6 border-t border-line pt-5">
+              <p className="text-sm leading-5 text-copy-muted">¿Preferís empezar uno nuevo?</p>
               <button
                 type="button"
                 onClick={onCreateGroup}
-                className="mt-3 flex min-h-12 w-full items-center justify-center rounded-full border border-[#e7e7e7] px-5 text-sm font-bold text-[#1f1f1f] transition hover:bg-[#f6f6f6] active:scale-[0.98]"
+                className="mt-3 flex min-h-12 w-full items-center justify-center gap-2 rounded-full border border-line px-5 text-sm font-bold text-ink transition active:scale-[0.98]"
               >
+                <Icon icon={Plus} size="md" className="text-brand" aria-hidden="true" />
                 Crear grupo
               </button>
             </div>

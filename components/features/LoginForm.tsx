@@ -1,7 +1,9 @@
 'use client';
 
 import { useState, type FormEvent } from 'react';
-import { EyeIcon, EyeOffIcon, LockIcon, MailIcon } from 'lucide-react';
+import { Envelope, Eye, EyeSlash, Lock } from '@phosphor-icons/react';
+
+import { Icon } from '@/components/ui/icon';
 import {
   AuthFeedback,
   AuthField,
@@ -92,7 +94,7 @@ export function LoginForm({ onLogin, error }: LoginFormProps) {
       )}
     >
       <form onSubmit={handleSubmit} noValidate>
-        <AuthField id="email" label="Email" icon={MailIcon} error={fieldErrors.email}>
+        <AuthField id="email" label="Email" icon={Envelope} error={fieldErrors.email}>
           <input
             id="email"
             name="email"
@@ -106,7 +108,7 @@ export function LoginForm({ onLogin, error }: LoginFormProps) {
             aria-describedby={fieldErrors.email ? 'email-error' : undefined}
           />
         </AuthField>
-        <AuthField id="password" label="Contraseña" icon={LockIcon} error={fieldErrors.password}>
+        <AuthField id="password" label="Contraseña" icon={Lock} error={fieldErrors.password}>
           <input
             id="password"
             name="password"
@@ -125,7 +127,7 @@ export function LoginForm({ onLogin, error }: LoginFormProps) {
             onClick={() => setShowPassword((visible) => !visible)}
             aria-label={showPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'}
           >
-            {showPassword ? <EyeOffIcon aria-hidden="true" /> : <EyeIcon aria-hidden="true" />}
+            {showPassword ? <Icon icon={EyeSlash} size="sm" aria-hidden="true" /> : <Icon icon={Eye} size="sm" aria-hidden="true" />}
           </button>
         </AuthField>
         <div className="auth-form-utility">
