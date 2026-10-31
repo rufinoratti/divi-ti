@@ -1,23 +1,22 @@
 export function AuthLoading() {
   return (
-    <main className="auth-page min-h-[100dvh] text-ink" aria-busy="true" aria-label="Preparando la pantalla de acceso">
-      <div className="auth-loading-layout mx-auto min-h-[100dvh] max-w-[1120px] px-5 py-5 sm:px-8 sm:py-8">
-        <header className="auth-loading-topbar">
-          <div className="auth-skeleton auth-skeleton-brand" />
-        </header>
-        <div className="auth-loading-main">
-          <div className="auth-loading-context">
-            <div className="auth-skeleton auth-skeleton-context-title" />
-            <div className="auth-skeleton auth-skeleton-context-copy" />
+    <main className="access-page" aria-busy="true" aria-label="Preparando la pantalla de acceso">
+      <div className="access-shell">
+        <div className="access-hero" aria-hidden="true">
+          <div className="access-hero-inner">
+            <div className="auth-skeleton auth-skeleton-brand auth-skeleton-on-brand" />
+            <div className="auth-skeleton auth-skeleton-title auth-skeleton-on-brand" />
+            <div className="auth-skeleton auth-skeleton-description auth-skeleton-on-brand" />
           </div>
-          <section className="auth-loading-screen">
-            <div className="auth-skeleton auth-skeleton-title" />
-            <div className="auth-skeleton auth-skeleton-description" />
-            <div className="auth-skeleton auth-skeleton-field" />
-            <div className="auth-skeleton auth-skeleton-field" />
-            <div className="auth-skeleton auth-skeleton-button" />
-          </section>
+          <div className="access-wave access-wave-bottom access-wave-placeholder" />
         </div>
+        <section className="access-sheet">
+          <div className="auth-skeleton auth-skeleton-title access-sheet-header-skel" />
+          <div className="auth-skeleton auth-skeleton-description" />
+          <div className="auth-skeleton auth-skeleton-field" />
+          <div className="auth-skeleton auth-skeleton-field" />
+          <div className="auth-skeleton auth-skeleton-button" />
+        </section>
       </div>
     </main>
   );

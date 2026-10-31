@@ -1,5 +1,8 @@
+'use client';
+
 import { CheckCircle, Receipt, Users } from '@phosphor-icons/react';
 
+import { AccessBrand, AccessWave } from '@/components/features/AuthPageFrame';
 import { Icon, type PhosphorIcon } from '@/components/ui/icon';
 
 const onboardingSteps: Array<{ icon: PhosphorIcon; title: string; description: string }> = [
@@ -22,46 +25,36 @@ const onboardingSteps: Array<{ icon: PhosphorIcon; title: string; description: s
 
 export function GuestOnboarding() {
   return (
-    <main className="guest-onboarding" aria-labelledby="guest-onboarding-title">
-      <div className="guest-onboarding-accent" aria-hidden="true" />
-
-      <div className="guest-onboarding-shell">
-        <header className="guest-onboarding-header">
-          <img src="/branding/divi-lockup.png" alt="Divi" className="guest-onboarding-logo" />
-          <span className="guest-onboarding-header-note">Gastos compartidos</span>
-        </header>
-
-        <section className="guest-onboarding-content">
-          <p className="guest-onboarding-kicker">Todo claro entre ustedes</p>
-          <h1 id="guest-onboarding-title">Dividí gastos sin perder el hilo.</h1>
-          <p className="guest-onboarding-description">
-            Organizá los gastos del grupo y sabé cuánto pone cada persona.
-          </p>
-
-          <ul className="guest-onboarding-steps" aria-label="Cómo funciona Divi">
-            {onboardingSteps.map(({ icon: StepIcon, title, description }) => (
-              <li key={title} className="guest-onboarding-step">
-                <span className="guest-onboarding-step-icon" aria-hidden="true">
-                  <Icon icon={StepIcon} size="sm" aria-hidden="true" />
-                </span>
-                <span>
-                  <strong>{title}</strong>
-                  <span>{description}</span>
-                </span>
-              </li>
-            ))}
-          </ul>
-
-          <div className="guest-onboarding-actions">
-            <a href="/signup" className="guest-onboarding-primary">
-              Crear cuenta
-            </a>
-            <a href="/login" className="guest-onboarding-secondary">
-              Iniciar sesión
-            </a>
+    <main className="access-page access-page-guest" aria-labelledby="guest-onboarding-title">
+      <div className="access-shell access-shell-guest">
+        <section className="access-hero access-hero-guest">
+          <div className="access-hero-inner">
+            <AccessBrand tone="light" />
+            <h1 id="guest-onboarding-title">Dividí gastos sin perder el hilo.</h1>
+            <p>Organizá los gastos del grupo y sabé cuánto pone cada persona.</p>
+            <ul className="access-steps access-steps-on-brand" aria-label="Cómo funciona Divi">
+              {onboardingSteps.map(({ icon: StepIcon, title, description }) => (
+                <li key={title}>
+                  <span className="access-step-icon" aria-hidden="true">
+                    <Icon icon={StepIcon} size="sm" />
+                  </span>
+                  <span>
+                    <strong>{title}</strong>
+                    <span>{description}</span>
+                  </span>
+                </li>
+              ))}
+            </ul>
           </div>
+          <AccessWave className="access-wave access-wave-bottom" />
+        </section>
 
-          <p className="guest-onboarding-footnote">Solo necesitás tu email y una contraseña.</p>
+        <section className="access-sheet access-sheet-actions" aria-label="Entrar a Divi">
+          <div className="access-actions">
+            <a href="/signup" className="access-primary access-primary-on-sheet">Crear cuenta</a>
+            <a href="/login" className="access-secondary">Iniciar sesión</a>
+          </div>
+          <p className="auth-note">Solo necesitás tu email y una contraseña.</p>
         </section>
       </div>
     </main>
