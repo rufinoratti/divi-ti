@@ -28,6 +28,16 @@ Se mantiene la paleta, la tipografía y los flujos. El foco pasa a iconos, movim
 - **Superficies:** inicio, navegación, listas, balance, perfil, grupos, auth y hojas alineados al mismo sistema de iconos, pozos y radios.
 - **Movimiento:** entrada corta al cambiar de pestaña (`divi-enter`); el resto responde a acciones. Se respeta `prefers-reduced-motion` (sin barrido del ticket).
 
+### Tercera pasada (acceso a pantalla completa)
+
+Se elimina la tarjeta flotante de login/registro, que quedaba a media altura y se veía cortada en el teléfono.
+
+- **Layout:** cabezal violeta a todo el ancho, corte en ola SVG y hoja blanca hasta el borde inferior (`100dvh`, sin marco ni sombra de card).
+- **Pantallas unificadas:** login, registro, recuperar contraseña, nueva contraseña, bienvenida de invitado e invitación a un grupo.
+- **Teléfono:** el título vive en el cabezal; el formulario ocupa el resto de la pantalla. El logo sobre el violeta se muestra en blanco.
+- **Escritorio:** panel violeta a la izquierda (frase y tres pasos) y formulario a la derecha, a alto completo, con ola como corte entre ambos.
+- **Carga:** el skeleton de auth sigue la misma silueta (cabezal + hoja).
+
 ## Alcance
 
 Se conservaron las funciones existentes de movimientos, división de gastos, invitaciones y confirmación de pagos. Los cambios son de presentación, interacción y adaptación móvil. No se agregó modo oscuro.
@@ -35,5 +45,5 @@ Se conservaron las funciones existentes de movimientos, división de gastos, inv
 ## Validación
 
 - `oxlint`: sin errores.
-- Vista previa en navegador local (`localhost:5173`): login, onboarding, alta, inicio, compositor con lectura de ticket, balance y perfil.
+- Vista previa en navegador local (`localhost:5173`): login, registro, recuperación, onboarding, alta, inicio, compositor con lectura de ticket, balance y perfil.
 - Dependencia nueva: `@phosphor-icons/react`.
