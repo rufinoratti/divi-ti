@@ -21,6 +21,35 @@ const receiptAnalysisSchema = z.object({
 
 type ReceiptAnalysis = z.infer<typeof receiptAnalysisSchema>;
 
+const receiptResponseFormat = {
+  type: 'json_schema',
+  json_schema: {
+    name: 'receipt_analysis',
+    strict: true,
+    schema: {
+      type: 'object',
+      properties: {
+        totalAmount: { type: ['number', 'null'] },
+        items: {
+          type: 'array',
+          items: {
+            type: 'object',
+            properties: {
+              name: { type: 'string' },
+              amount: { type: 'number' },
+              quantity: { type: ['number', 'null'] },
+            },
+            required: ['name', 'amount', 'quantity'],
+            additionalProperties: false,
+          },
+        },
+      },
+      required: ['totalAmount', 'items'],
+      additionalProperties: false,
+    },
+  },
+} as const;
+
 type OpenRouterResponse = {
   choices?: Array<{
     finish_reason?: string | null;
@@ -248,6 +277,8 @@ export async function POST(request: NextRequest) {
               },
             ],
             max_tokens: 4096,
+            reasoning: { enabled: false },
+            response_format: receiptResponseFormat,
             usage: { include: true },
           }),
         });
@@ -350,10 +381,30 @@ export async function POST(request: NextRequest) {
         return response;
       }
 
+      const choice = payload.choices?.[0];
+      const wasTruncated = choice?.finish_reason === 'length';
+      if (wasTruncated) {
+        console.warn('[receipt-ai] OpenRouter agotó el límite de salida', {
+          model,
+          completionTokens: payload.usage?.completion_tokens ?? null,
+          reasoningLength: choice?.message?.reasoning?.length ?? 0,
+          willTryFallback: canTryFallback,
+        });
+        if (canTryFallback) {
+          console.warn('[receipt-ai] intentando el modelo de respaldo después de una respuesta truncada', { fallbackModel });
+          continue;
+        }
+        const response = errorResponse(
+          'AI_ANALYSIS_TRUNCATED',
+          'La respuesta quedó incompleta incluso con el modelo de respaldo. Revisá los datos manualmente e intentá de nuevo.',
+          422,
+        );
+        applyCookies(response);
+        return response;
+      }
+
       const outputText = readOutputText(payload);
       if (!outputText) {
-        const choice = payload.choices?.[0];
-        const wasTruncated = choice?.finish_reason === 'length';
         console.warn('[receipt-ai] la respuesta no contiene texto final', {
           model,
           finishReason: choice?.finish_reason ?? null,
@@ -366,10 +417,8 @@ export async function POST(request: NextRequest) {
           continue;
         }
         const response = errorResponse(
-          wasTruncated ? 'AI_ANALYSIS_TRUNCATED' : 'AI_ANALYSIS_EMPTY',
-          wasTruncated
-            ? 'La IA agotó el límite de respuesta antes de terminar. Volvé a intentar con la misma foto.'
-            : 'La IA no devolvió un total legible. Probá con una foto más nítida o ingresá el importe manualmente.',
+          'AI_ANALYSIS_EMPTY',
+          'La IA no devolvió un total legible. Probá con una foto más nítida o ingresá el importe manualmente.',
           422,
         );
         applyCookies(response);
